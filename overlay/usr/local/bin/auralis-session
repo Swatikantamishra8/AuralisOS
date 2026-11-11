@@ -1,0 +1,104 @@
+#!/bin/sh
+# ==============================================================================
+# AuralisOS Wayland Session Initializer: /usr/local/bin/auralis-session
+# Phase 2: "Liquid Glass" Desktop Launch & Hardware Acceleration Fallback
+# ==============================================================================
+
+set -e
+
+# Log helper
+log() {
+    echo "[AURALIS-SESSION] $*"
+}
+
+log "Initializing AuralisOS Wayland Desktop Environment..."
+
+# ------------------------------------------------------------------------------
+# 1. Environment & XDG Standards
+# ------------------------------------------------------------------------------
+export XDG_CURRENT_DESKTOP="Wayfire"
+export XDG_SESSION_DESKTOP="Wayfire"
+export XDG_SESSION_TYPE="wayland"
+export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+
+if [ ! -d "$XDG_RUNTIME_DIR" ]; then
+    mkdir -p "$XDG_RUNTIME_DIR"
+    chmod 0700 "$XDG_RUNTIME_DIR"
+fi
+
+# Ensure seatd daemon is accessible
+if [ -S /run/seatd.sock ]; then
+    export SEATD_SOCK=/run/seatd.sock
+    export LIBSEAT_BACKEND=seatd
+fi
+
+# Wayland native toolkit variables
+export GDK_BACKEND=wayland,x11
+export QT_QPA_PLATFORM=wayland
+export CLUTTER_BACKEND=wayland
+export SDL_VIDEODRIVER=wayland
+export MOZ_ENABLE_WAYLAND=1
+
+# ------------------------------------------------------------------------------
+# 2. VirtualBox & Hardware 3D Acceleration Fallback Engine
+#    Requirement: Automatic fallback to WLR_RENDERER_ALLOW_SOFTWARE=1
+#                 if running in VirtualBox VM without 3D acceleration
+# ------------------------------------------------------------------------------
+IS_VBOX=0
+IS_SOFTWARE_FALLBACK=0
+
+# Detect VirtualBox through DMI, PCI identifiers, or kernel modules
+if grep -qi "virtualbox\|innotek" /sys/class/dmi/id/product_name /sys/class/dmi/id/sys_vendor 2>/dev/null; then
+    IS_VBOX=1
+elif [ -e /dev/vboxguest ] || lsmod | grep -qi "vbox"; then
+    IS_VBOX=1
+elif command -v lspci >/dev/null 2>&1 && lspci -d 80ee: >/dev/null 2>&1; then
+    IS_VBOX=1
+fi
+
+# Check for functional 3D acceleration device node
+HAS_3D_ACCEL=0
+if [ -c /dev/dri/renderD128 ]; then
+    # Test if we can access the render node and if hardware acceleration is viable
+    if command -v eglinfo >/dev/null 2>&1; then
+        if eglinfo -B 2>/dev/null | grep -qi "llvmpipe\|softpipe"; then
+            HAS_3D_ACCEL=0
+        else
+            HAS_3D_ACCEL=1
+        fi
+    else
+        # If render node exists and not VirtualBox without guest additions, consider 3D active
+        [ "$IS_VBOX" -eq 0 ] && HAS_3D_ACCEL=1
+    fi
+fi
+
+if [ "$IS_VBOX" -eq 1 ] && [ "$HAS_3D_ACCEL" -eq 0 ]; then
+    log "VirtualBox environment without hardware 3D detected."
+    log "Activating WLR_RENDERER_ALLOW_SOFTWARE=1 and Mesa llvmpipe fallback..."
+    IS_SOFTWARE_FALLBACK=1
+elif [ ! -c /dev/dri/card0 ] && [ ! -c /dev/dri/renderD128 ]; then
+    log "No hardware DRM display nodes detected. Forcing software rendering..."
+    IS_SOFTWARE_FALLBACK=1
+fi
+
+if [ "$IS_SOFTWARE_FALLBACK" -eq 1 ]; then
+    export WLR_RENDERER_ALLOW_SOFTWARE=1
+    export WLR_NO_HARDWARE_CURSORS=1
+    export LIBGL_ALWAYS_SOFTWARE=1
+    export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
+    export GALLIUM_DRIVER=llvmpipe
+    log "Software rendering parameters exported successfully."
+else
+    log "Hardware 3D DRM acceleration active. Standard rendering enabled."
+fi
+
+# ------------------------------------------------------------------------------
+# 3. Launch Wayfire Compositor
+# ------------------------------------------------------------------------------
+CONFIG_FILE="/etc/wayfire/wayfire.ini"
+if [ -f "$HOME/.config/wayfire.ini" ]; then
+    CONFIG_FILE="$HOME/.config/wayfire.ini"
+fi
+
+log "Launching Wayfire with configuration: $CONFIG_FILE"
+exec wayfire -c "$CONFIG_FILE"

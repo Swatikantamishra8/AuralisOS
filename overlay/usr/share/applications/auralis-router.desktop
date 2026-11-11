@@ -1,0 +1,13 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Auralis Universal Binary Router
+GenericName=Multi-Platform Binary & Package Launcher
+Comment=Launch Windows (.exe/.msi), Android (.apk), Linux (.deb/.rpm), and macOS (.dmg/.app) seamlessly
+Exec=/usr/bin/auralis-router %f
+Icon=system-run
+Terminal=false
+Categories=System;Utility;Core;
+MimeType=application/x-msdownload;application/x-ms-dos-executable;application/x-msi;application/vnd.android.package-archive;application/vnd.debian.binary-package;application/x-rpm;application/x-apple-diskimage;application/x-mach-binary;application/x-executable;
+StartupNotify=true
+NoDisplay=false

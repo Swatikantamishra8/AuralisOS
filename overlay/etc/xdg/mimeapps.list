@@ -1,0 +1,21 @@
+[Default Applications]
+application/x-msdownload=auralis-router.desktop
+application/x-ms-dos-executable=auralis-router.desktop
+application/x-msi=auralis-router.desktop
+application/vnd.android.package-archive=auralis-router.desktop
+application/vnd.debian.binary-package=auralis-router.desktop
+application/x-rpm=auralis-router.desktop
+application/x-apple-diskimage=auralis-router.desktop
+application/x-mach-binary=auralis-router.desktop
+application/x-executable=auralis-router.desktop
+
+[Added Associations]
+application/x-msdownload=auralis-router.desktop;
+application/x-ms-dos-executable=auralis-router.desktop;
+application/x-msi=auralis-router.desktop;
+application/vnd.android.package-archive=auralis-router.desktop;
+application/vnd.debian.binary-package=auralis-router.desktop;
+application/x-rpm=auralis-router.desktop;
+application/x-apple-diskimage=auralis-router.desktop;
+application/x-mach-binary=auralis-router.desktop;
+application/x-executable=auralis-router.desktop;

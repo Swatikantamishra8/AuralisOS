@@ -1,0 +1,19 @@
+# ==============================================================================
+# Alpine mkinitfs Feature Definition: ntfsloop.modules
+# Phase 5: NTFS Loopback Driver & Storage Modules for Windows Co-Existence
+# ==============================================================================
+ntfs3
+loop
+squashfs
+ext4
+vfat
+overlay
+nls_utf8
+nls_cp437
+nls_iso8859_1
+sd_mod
+ahci
+nvme
+nvme_core
+uas
+usb_storage

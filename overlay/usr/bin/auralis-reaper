@@ -1,0 +1,130 @@
+#!/bin/sh
+# ==============================================================================
+# AuralisOS Idle Memory Reaper Daemon: /usr/bin/auralis-reaper
+# Phase 3: Dynamic Multi-World Compatibility Subsystem & RAM Reclamation
+# Interval: 45 seconds
+# Actions: Kills idle wineserver & waydroid session, flushes kernel page cache
+# ==============================================================================
+
+REAP_INTERVAL=45
+LOG_FILE="/var/log/auralis-reaper.log"
+
+log() {
+    local msg="[$(date '+%Y-%m-%d %H:%M:%S')] [AURALIS-REAPER] $*"
+    echo "$msg"
+    echo "$msg" >> "$LOG_FILE" 2>/dev/null || true
+}
+
+log "Daemon started. Monitoring Wine and Waydroid subsystems (interval: ${REAP_INTERVAL}s)..."
+
+# Clean exit handler
+trap 'log "Daemon terminating cleanly."; exit 0' TERM INT HUP
+
+# Helper to find Wayfire IPC socket if not set in environment
+find_wayfire_socket() {
+    if [ -n "$WAYFIRE_SOCKET" ] && [ -S "$WAYFIRE_SOCKET" ]; then
+        echo "$WAYFIRE_SOCKET"
+        return
+    fi
+    for s in /run/user/*/wayfire-*.socket /tmp/wayfire-*.socket; do
+        if [ -S "$s" ]; then
+            echo "$s"
+            return
+        fi
+    done
+    echo ""
+}
+
+# Check if any Wine windows are active in Wayfire
+has_active_wine_windows() {
+    local wf_sock="$(find_wayfire_socket)"
+    if [ -n "$wf_sock" ] && command -v wayfire-msg >/dev/null 2>&1; then
+        local views
+        views="$(WAYFIRE_SOCKET="$wf_sock" wayfire-msg list-views 2>/dev/null || true)"
+        if echo "$views" | grep -Ei '"app-id":\s*"[^"]*(\.exe|wine)' >/dev/null 2>&1; then
+            return 0 # Active Wine window present
+        fi
+    fi
+
+    # Secondary check: Check process tree for running user .exe binaries
+    # Exclude standard Wine background daemons
+    local active_user_exes
+    active_user_exes="$(ps -eo comm,args 2>/dev/null | grep -Ei '\.exe' | grep -vE 'grep|wineserver|services\.exe|explorer\.exe|winedevice\.exe|plugplay\.exe|rpcss\.exe' || true)"
+    if [ -n "$active_user_exes" ]; then
+        return 0
+    fi
+
+    return 1 # No active Wine windows or apps
+}
+
+# Check if any Waydroid windows are active in Wayfire
+has_active_waydroid_windows() {
+    local wf_sock="$(find_wayfire_socket)"
+    if [ -n "$wf_sock" ] && command -v wayfire-msg >/dev/null 2>&1; then
+        local views
+        views="$(WAYFIRE_SOCKET="$wf_sock" wayfire-msg list-views 2>/dev/null || true)"
+        if echo "$views" | grep -Ei '"app-id":\s*"(waydroid\.|org\.waydroid\.|com\.|org\.)' >/dev/null 2>&1; then
+            return 0 # Active Waydroid window present
+        fi
+    fi
+
+    # Secondary check: If Waydroid session is running, query active activity stack
+    if command -v waydroid >/dev/null 2>&1; then
+        local app_status
+        app_status="$(waydroid status 2>/dev/null || true)"
+        if echo "$app_status" | grep -qi "RUNNING"; then
+            # Check if any top-level Waydroid surface exists in Wayland
+            if pgrep -f "org.waydroid" >/dev/null 2>&1; then
+                return 0
+            fi
+        fi
+    fi
+
+    return 1 # No active Waydroid windows
+}
+
+# Main reaper supervision loop
+while true; do
+    sleep "$REAP_INTERVAL"
+
+    REAPED_ANY=0
+
+    # --------------------------------------------------------------------------
+    # 1. Inspect Wine Subsystem
+    # --------------------------------------------------------------------------
+    if pgrep -x wineserver >/dev/null 2>&1 || pgrep -f "wine.*preloader" >/dev/null 2>&1; then
+        if ! has_active_wine_windows; then
+            log "Idle Wine subsystem detected (no active client windows)."
+            log "Executing 'wineserver -k' to terminate idle prefix and release memory..."
+            wineserver -k 2>/dev/null || killall wineserver 2>/dev/null || true
+            REAPED_ANY=1
+        fi
+    fi
+
+    # --------------------------------------------------------------------------
+    # 2. Inspect Waydroid Subsystem
+    # --------------------------------------------------------------------------
+    if pgrep -f "waydroid.*session" >/dev/null 2>&1 || pgrep -f "system_server" >/dev/null 2>&1; then
+        if ! has_active_waydroid_windows; then
+            log "Idle Waydroid Android subsystem detected (no active client windows)."
+            log "Executing 'waydroid session stop' to reclaim container RAM..."
+            waydroid session stop 2>/dev/null || true
+            REAPED_ANY=1
+        fi
+    fi
+
+    # --------------------------------------------------------------------------
+    # 3. Cache Eviction & Kernel Memory Return
+    # --------------------------------------------------------------------------
+    if [ "$REAPED_ANY" -eq 1 ]; then
+        log "Reaped idle compatibility runtimes. Flushing kernel caches to host..."
+        sync
+        echo 3 > /proc/sys/vm/drop_caches 2>/dev/null || true
+        echo 1 > /proc/sys/vm/compact_memory 2>/dev/null || true
+
+        # Log new memory state
+        local free_ram
+        free_ram="$(free -m | awk '/Mem:/ {print $4}')"
+        log "Memory reclamation complete. Free physical RAM: ${free_ram} MB."
+    fi
+done

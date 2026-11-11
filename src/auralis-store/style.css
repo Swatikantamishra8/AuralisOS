@@ -1,0 +1,164 @@
+/* ==============================================================================
+ * AuralisOS App Store & Subsystem Hydrator ("Liquid Glass" GTK4 Styling)
+ * ============================================================================== */
+
+* {
+    font-family: "Noto Sans", sans-serif;
+    font-size: 13px;
+}
+
+window.store-window {
+    background-color: rgba(16, 21, 32, 0.95);
+    color: #e6edf3;
+}
+
+/* Stack Switcher Tab Navigation */
+stackswitcher button {
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 6px 18px;
+    color: #c9d6df;
+    font-weight: 600;
+    margin: 0 4px;
+    transition: all 150ms ease;
+}
+
+stackswitcher button:checked {
+    background: linear-gradient(135deg, rgba(0, 180, 255, 0.4), rgba(0, 110, 230, 0.5));
+    border-color: #00d4ff;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(0, 180, 255, 0.4);
+}
+
+/* Subsystem Engine Cards */
+.engine-card {
+    background-color: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: all 180ms ease;
+}
+
+.engine-card:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(0, 210, 255, 0.4);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.engine-title {
+    font-size: 15px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.engine-desc {
+    color: #9ab0c5;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.engine-meta {
+    color: #6c7d93;
+    font-size: 11px;
+    margin-top: 2px;
+}
+
+/* Status Badges */
+.badge-mounted {
+    background-color: rgba(46, 213, 115, 0.25);
+    border: 1px solid rgba(46, 213, 115, 0.6);
+    color: #2ed573;
+    border-radius: 12px;
+    padding: 3px 10px;
+    font-weight: 600;
+    font-size: 11px;
+}
+
+.badge-cached {
+    background-color: rgba(255, 171, 0, 0.25);
+    border: 1px solid rgba(255, 171, 0, 0.6);
+    color: #ffc107;
+    border-radius: 12px;
+    padding: 3px 10px;
+    font-weight: 600;
+    font-size: 11px;
+}
+
+.badge-uninstalled {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #8fa0b0;
+    border-radius: 12px;
+    padding: 3px 10px;
+    font-weight: 500;
+    font-size: 11px;
+}
+
+/* Action Buttons */
+.btn-enable {
+    background: linear-gradient(135deg, rgba(0, 180, 255, 0.35), rgba(0, 110, 230, 0.45));
+    border: 1px solid rgba(0, 210, 255, 0.55);
+    border-radius: 8px;
+    color: #ffffff;
+    font-weight: bold;
+    padding: 6px 16px;
+    transition: all 150ms ease;
+}
+
+.btn-enable:hover {
+    background: linear-gradient(135deg, rgba(0, 210, 255, 0.55), rgba(0, 140, 255, 0.65));
+    border-color: #ffffff;
+    box-shadow: 0 0 10px rgba(0, 200, 255, 0.5);
+}
+
+.btn-disable {
+    background-color: rgba(255, 60, 80, 0.2);
+    border: 1px solid rgba(255, 80, 100, 0.4);
+    border-radius: 8px;
+    color: #ff6b81;
+    font-weight: 500;
+    padding: 6px 14px;
+    transition: all 150ms ease;
+}
+
+.btn-disable:hover {
+    background-color: rgba(255, 60, 80, 0.4);
+    border-color: #ff4757;
+    color: #ffffff;
+}
+
+/* Curated App Cards */
+.app-card {
+    background-color: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 14px;
+    margin: 4px;
+    transition: all 140ms ease;
+}
+
+.app-card:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    border-color: rgba(0, 180, 255, 0.35);
+}
+
+.app-platform-pill {
+    background-color: rgba(0, 160, 255, 0.2);
+    border: 1px solid rgba(0, 180, 255, 0.4);
+    border-radius: 10px;
+    padding: 2px 8px;
+    color: #00d4ff;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.search-box {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    color: #ffffff;
+    padding: 8px 12px;
+}

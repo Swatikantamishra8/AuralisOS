@@ -1,0 +1,166 @@
+#!/sbin/openrc-run
+# ==============================================================================
+# OpenRC Service: /etc/init.d/auralis-hwdetect
+# Phase 5: Bare-Metal Hardware Auto-Tuner & Driver Optimization
+# Runs at boot: GPU profiling, Wayland flags, and Wi-Fi stack configuration
+# ==============================================================================
+
+description="AuralisOS Bare-Metal Hardware Auto-Tuner"
+
+depend() {
+    need devfs udev
+    before wayfire
+}
+
+start() {
+    ebegin "Running AuralisOS Hardware Auto-Tuner"
+
+    GPU_PROFILE="/etc/profile.d/auralis-gpu.sh"
+    mkdir -p /etc/profile.d
+    mkdir -p /etc/iwd
+
+    echo "#!/bin/sh" > "$GPU_PROFILE"
+    echo "# Generated dynamically by /etc/init.d/auralis-hwdetect at boot" >> "$GPU_PROFILE"
+    echo "# Optimized for detected hardware architecture" >> "$GPU_PROFILE"
+
+    # --------------------------------------------------------------------------
+    # 1. GPU Detection & Wayland Optimization
+    # --------------------------------------------------------------------------
+    local pci_vga
+    pci_vga="$(lspci -nn 2>/dev/null | grep -Ei 'VGA|3D|Display' || true)"
+
+    local has_intel=0
+    local has_amd=0
+    local has_nvidia=0
+    local has_vbox=0
+    local has_qemu=0
+
+    if echo "$pci_vga" | grep -qi "\[8086:"; then
+        has_intel=1
+    fi
+    if echo "$pci_vga" | grep -qi "\[1002:"; then
+        has_amd=1
+    fi
+    if echo "$pci_vga" | grep -qi "\[10de:"; then
+        has_nvidia=1
+    fi
+    if echo "$pci_vga" | grep -qi "\[80ee:"; then
+        has_vbox=1
+    fi
+    if echo "$pci_vga" | grep -qi "\[1af4:\|\[1234:"; then
+        has_qemu=1
+    fi
+
+    # Fallback vendor checks if lspci device string differs
+    if [ "$has_vbox" -eq 0 ] && [ -e /dev/vboxguest ]; then
+        has_vbox=1
+    fi
+
+    if [ "$has_intel" -eq 1 ]; then
+        einfo "Detected Intel Graphics Controller"
+        # Determine Gen generation (Skylake/Kaby Lake/Tiger Lake/Arc use iHD, older use i965)
+        cat >> "$GPU_PROFILE" <<'EOF'
+export LIBVA_DRIVER_NAME=iHD
+export MESA_LOADER_DRIVER_OVERRIDE=iris
+export WLR_DRM_NO_ATOMIC=0
+export INTEL_DEBUG=noccs
+EOF
+        # Check if legacy Gen 7 or below (Ironlake/Sandybridge/Ivybridge/Haswell)
+        if echo "$pci_vga" | grep -Ei '\[8086:01[0-9a-f]{2}\]|\[8086:04[0-9a-f]{2}\]|\[8086:0a[0-9a-f]{2}\]'; then
+            sed -i 's/LIBVA_DRIVER_NAME=iHD/LIBVA_DRIVER_NAME=i965/' "$GPU_PROFILE"
+            sed -i 's/MESA_LOADER_DRIVER_OVERRIDE=iris/MESA_LOADER_DRIVER_OVERRIDE=crocus/' "$GPU_PROFILE"
+        fi
+
+    elif [ "$has_amd" -eq 1 ]; then
+        einfo "Detected AMD Radeon Graphics Controller"
+        cat >> "$GPU_PROFILE" <<'EOF'
+export LIBVA_DRIVER_NAME=radeonsi
+export VDPAU_DRIVER=radeonsi
+export MESA_LOADER_DRIVER_OVERRIDE=radeonsi
+export WLR_DRM_NO_ATOMIC=0
+export AMD_VULKAN_ICD=RADV
+EOF
+
+    elif [ "$has_nvidia" -eq 1 ]; then
+        einfo "Detected NVIDIA Graphics Controller"
+        if [ -c /dev/nvidia0 ]; then
+            cat >> "$GPU_PROFILE" <<'EOF'
+export LIBVA_DRIVER_NAME=nvidia
+export GBM_BACKEND=nvidia-drm
+export __GLX_VENDOR_LIBRARY_NAME=nvidia
+export WLR_NO_HARDWARE_CURSORS=1
+export WLR_RENDERER=vulkan
+EOF
+        else
+            # Open source Nouveau fallback
+            cat >> "$GPU_PROFILE" <<'EOF'
+export LIBVA_DRIVER_NAME=nouveau
+export MESA_LOADER_DRIVER_OVERRIDE=nouveau
+export WLR_NO_HARDWARE_CURSORS=1
+EOF
+        fi
+
+    elif [ "$has_vbox" -eq 1 ]; then
+        einfo "Detected VirtualBox Virtual Adapter (Forcing Software Rasterizer)"
+        cat >> "$GPU_PROFILE" <<'EOF'
+export WLR_RENDERER_ALLOW_SOFTWARE=1
+export WLR_NO_HARDWARE_CURSORS=1
+export LIBGL_ALWAYS_SOFTWARE=1
+export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
+export GALLIUM_DRIVER=llvmpipe
+EOF
+
+    elif [ "$has_qemu" -eq 1 ]; then
+        einfo "Detected QEMU/VirtIO Virtual GPU"
+        cat >> "$GPU_PROFILE" <<'EOF'
+export MESA_LOADER_DRIVER_OVERRIDE=virtio_gpu
+export WLR_NO_HARDWARE_CURSORS=1
+EOF
+
+    else
+        einfo "Generic/Unidentified GPU: testing DRM render node presence"
+        if [ ! -c /dev/dri/renderD128 ] && [ ! -c /dev/dri/card0 ]; then
+            cat >> "$GPU_PROFILE" <<'EOF'
+export WLR_RENDERER_ALLOW_SOFTWARE=1
+export WLR_NO_HARDWARE_CURSORS=1
+export LIBGL_ALWAYS_SOFTWARE=1
+export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
+EOF
+        fi
+    fi
+
+    chmod +x "$GPU_PROFILE"
+
+    # --------------------------------------------------------------------------
+    # 2. Wi-Fi Auto-Configuration (iwd + dhcpcd)
+    # --------------------------------------------------------------------------
+    local pci_wifi
+    pci_wifi="$(lspci -nn 2>/dev/null | grep -Ei 'Network|Wireless|802\.11' || true)"
+
+    if [ -n "$pci_wifi" ] || [ -d /sys/class/net/wlan0 ] || command -v iw >/dev/null 2>&1; then
+        einfo "Configuring Wi-Fi Subsystem (iwd + dhcpcd)..."
+
+        # Unblock Wi-Fi transmitters via rfkill
+        command -v rfkill >/dev/null 2>&1 && rfkill unblock wifi 2>/dev/null || true
+
+        # Write iwd standalone configuration
+        cat > /etc/iwd/main.conf <<'EOF'
+[General]
+EnableNetworkConfiguration=true
+
+[Network]
+RoutePriorityOffset=300
+EnableIPv6=true
+
+[Scan]
+DisablePeriodicalScan=false
+EOF
+
+        # Start iwd daemon if service exists
+        if [ -x /etc/init.d/iwd ]; then
+            rc-service iwd start 2>/dev/null || true
+        fi
+    fi
+
+    eend 0
+}

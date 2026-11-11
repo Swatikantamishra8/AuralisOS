@@ -1,0 +1,8 @@
+# ==============================================================================
+# Alpine mkinitfs Feature Definition: ntfsloop.files
+# ==============================================================================
+/usr/share/mkinitfs/hooks/ntfsloop.sh
+/sbin/losetup
+/sbin/blkid
+/bin/mount
+/bin/umount

@@ -1,0 +1,234 @@
+/* ==============================================================================
+ * AuralisOS "Liquid Glass" GTK4 Desktop Shell Styling
+ * Theme: Midnight Onyx / Translucent Sapphire Frosted Glass
+ * Target: Low-overhead CSS rendering for musl & Alpine Linux (<95MB Idle RAM)
+ * ============================================================================== */
+
+/* Universal Glass Reset */
+* {
+    font-family: "Noto Sans", "DejaVu Sans", sans-serif;
+    font-size: 13px;
+    -gtk-icon-style: symbolic;
+}
+
+/* ------------------------------------------------------------------------------
+ * 1. Taskbar Bottom Glass Panel
+ * ------------------------------------------------------------------------------ */
+window.auralis-taskbar {
+    background-color: rgba(15, 20, 30, 0.78);
+    border-top: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.45);
+    padding: 0;
+    margin: 0;
+}
+
+.taskbar-box {
+    padding: 4px 8px;
+}
+
+/* Start Menu Trigger Button */
+.btn-start {
+    background: linear-gradient(135deg, rgba(0, 180, 255, 0.35), rgba(0, 100, 220, 0.45));
+    border: 1px solid rgba(0, 210, 255, 0.55);
+    border-radius: 8px;
+    color: #ffffff;
+    font-weight: bold;
+    padding: 4px 12px;
+    box-shadow: 0 2px 8px rgba(0, 140, 255, 0.3);
+    transition: all 180ms ease;
+}
+
+.btn-start:hover {
+    background: linear-gradient(135deg, rgba(0, 210, 255, 0.55), rgba(0, 130, 255, 0.65));
+    box-shadow: 0 0 14px rgba(0, 180, 255, 0.6);
+    border-color: #ffffff;
+}
+
+.btn-start:active {
+    background: rgba(0, 90, 200, 0.7);
+    box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* Taskbar Pinned / Running App Buttons */
+.task-item {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    color: #e0e6ed;
+    padding: 4px 10px;
+    margin: 0 2px;
+    transition: all 150ms ease;
+}
+
+.task-item:hover {
+    background-color: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+}
+
+.task-item.active {
+    background-color: rgba(0, 160, 255, 0.25);
+    border-color: rgba(0, 190, 255, 0.5);
+    border-bottom: 2px solid #00c0ff;
+}
+
+/* System Tray Indicators */
+.tray-pill {
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+    padding: 3px 10px;
+    margin: 0 3px;
+    color: #cdd6e0;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.tray-pill.ram-warning {
+    background-color: rgba(255, 160, 0, 0.25);
+    border-color: rgba(255, 180, 0, 0.6);
+    color: #ffca28;
+}
+
+.tray-pill.ram-critical {
+    background-color: rgba(255, 50, 50, 0.3);
+    border-color: rgba(255, 70, 70, 0.7);
+    color: #ff5252;
+}
+
+.tray-clock {
+    font-weight: bold;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+}
+
+.btn-control-center {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    padding: 4px 8px;
+    color: #ffffff;
+    transition: all 150ms ease;
+}
+
+.btn-control-center:hover {
+    background-color: rgba(0, 180, 255, 0.35);
+    border-color: rgba(0, 220, 255, 0.6);
+}
+
+/* ------------------------------------------------------------------------------
+ * 2. Translucent Start Menu Launcher
+ * ------------------------------------------------------------------------------ */
+window.auralis-launcher {
+    background-color: rgba(14, 18, 28, 0.88);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 14px;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    padding: 12px;
+}
+
+.launcher-search {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: #ffffff;
+    padding: 8px 12px;
+    font-size: 14px;
+}
+
+.launcher-search:focus {
+    background-color: rgba(255, 255, 255, 0.14);
+    border-color: #00b4ff;
+    box-shadow: 0 0 10px rgba(0, 180, 255, 0.4);
+}
+
+.launcher-list {
+    background: transparent;
+    padding: 4px;
+}
+
+.app-row {
+    background-color: transparent;
+    border-radius: 8px;
+    padding: 6px 10px;
+    margin: 2px 0;
+    transition: background-color 120ms ease;
+}
+
+.app-row:hover, .app-row:selected {
+    background-color: rgba(0, 180, 255, 0.22);
+}
+
+.app-title {
+    color: #f0f4f8;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.app-desc {
+    color: #8c9ba8;
+    font-size: 11px;
+}
+
+/* Start Menu Footer */
+.launcher-footer {
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 10px;
+    margin-top: 6px;
+}
+
+.user-badge {
+    color: #8fa0b0;
+    font-weight: 500;
+    font-size: 11px;
+}
+
+/* ------------------------------------------------------------------------------
+ * 3. Quick Control Center Popover
+ * ------------------------------------------------------------------------------ */
+.control-center-box {
+    background-color: rgba(14, 18, 28, 0.92);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 12px;
+    padding: 14px;
+    min-width: 260px;
+}
+
+.control-title {
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.control-btn {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: #ffffff;
+    padding: 6px 10px;
+    font-weight: 500;
+    transition: all 120ms ease;
+}
+
+.control-btn:hover {
+    background-color: rgba(0, 180, 255, 0.3);
+    border-color: rgba(0, 200, 255, 0.5);
+}
+
+.control-btn-danger:hover {
+    background-color: rgba(255, 60, 60, 0.4);
+    border-color: rgba(255, 80, 80, 0.7);
+}
+
+/* Sliders */
+scale trough {
+    background-color: rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    min-height: 6px;
+}
+
+scale highlight {
+    background: linear-gradient(90deg, #0099ff, #00d4ff);
+    border-radius: 4px;
+}

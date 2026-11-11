@@ -1,0 +1,33 @@
+# ==============================================================================
+# AuralisOS .gitignore
+# ==============================================================================
+
+# ISO Outputs and Large Disk Images (Exceeds GitHub 100MB File Limit)
+dist/*.iso
+dist/*.iso.sha256
+.build.img
+*.img
+*.apkovl.tar.gz
+
+# Compiled Binaries & Objects
+src/auralis-shell/auralis-shell
+src/auralis-taskmgr/auralis-taskmgr
+src/auralis-store/auralis-store
+src/auralis-router/auralis-router
+installer/windows/Auralis-Installer.exe
+*.o
+*.a
+*.so
+
+# Temporary / Scratch Files
+tmp/
+*.tmp
+*.bak
+*.swp
+.fuse_hidden*
+
+# OS & Editor Metadata
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

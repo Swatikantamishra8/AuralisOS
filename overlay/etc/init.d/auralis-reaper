@@ -1,0 +1,17 @@
+#!/sbin/openrc-run
+# ==============================================================================
+# OpenRC Service Script: /etc/init.d/auralis-reaper
+# ==============================================================================
+
+description="AuralisOS Idle Compatibility Subsystem Memory Reaper Daemon"
+
+command="/usr/bin/auralis-reaper"
+command_background="yes"
+pidfile="/run/auralis-reaper.pid"
+output_log="/var/log/auralis-reaper.log"
+error_log="/var/log/auralis-reaper.log"
+
+depend() {
+    need localmount
+    after wayfire
+}

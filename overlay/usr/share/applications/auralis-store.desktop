@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Auralis Store
+GenericName=App Store & Subsystem Hydrator
+Comment=Modular on-demand subsystem manager and curated cross-platform application store
+Exec=/usr/local/bin/auralis-store
+Icon=system-software-install
+Terminal=false
+Categories=System;PackageManager;Settings;
+StartupNotify=true
