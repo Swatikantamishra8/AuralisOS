@@ -4,8 +4,6 @@
 # Phase 2: "Liquid Glass" Desktop Launch & Hardware Acceleration Fallback
 # ==============================================================================
 
-set -e
-
 # Log helper
 log() {
     echo "[AURALIS-SESSION] $*"
@@ -26,11 +24,14 @@ if [ ! -d "$XDG_RUNTIME_DIR" ]; then
     chmod 0700 "$XDG_RUNTIME_DIR"
 fi
 
-# Ensure seatd daemon is accessible
-if [ -S /run/seatd.sock ]; then
-    export SEATD_SOCK=/run/seatd.sock
-    export LIBSEAT_BACKEND=seatd
+# Ensure seatd daemon is accessible and running
+if ! pgrep seatd >/dev/null 2>&1; then
+    log "Starting seatd daemon..."
+    /usr/bin/seatd -g seat -l error -u root &
+    sleep 0.5
 fi
+export SEATD_SOCK=/run/seatd.sock
+export LIBSEAT_BACKEND=seatd
 
 # Wayland native toolkit variables
 export GDK_BACKEND=wayland,x11
@@ -68,7 +69,9 @@ if [ -c /dev/dri/renderD128 ]; then
         fi
     else
         # If render node exists and not VirtualBox without guest additions, consider 3D active
-        [ "$IS_VBOX" -eq 0 ] && HAS_3D_ACCEL=1
+        if [ "$IS_VBOX" -eq 0 ]; then
+            HAS_3D_ACCEL=1
+        fi
     fi
 fi
 
@@ -93,7 +96,7 @@ else
 fi
 
 # ------------------------------------------------------------------------------
-# 3. Launch Wayfire Compositor
+# 3. Launch Wayfire Compositor with Auto-Fallback
 # ------------------------------------------------------------------------------
 CONFIG_FILE="/etc/wayfire/wayfire.ini"
 if [ -f "$HOME/.config/wayfire.ini" ]; then
@@ -101,4 +104,15 @@ if [ -f "$HOME/.config/wayfire.ini" ]; then
 fi
 
 log "Launching Wayfire with configuration: $CONFIG_FILE"
-exec wayfire -c "$CONFIG_FILE"
+wayfire -c "$CONFIG_FILE" || {
+    log "Wayfire exited. Retrying with software rendering fallback..."
+    export WLR_RENDERER_ALLOW_SOFTWARE=1
+    export WLR_NO_HARDWARE_CURSORS=1
+    export LIBGL_ALWAYS_SOFTWARE=1
+    export MESA_LOADER_DRIVER_OVERRIDE=llvmpipe
+    export GALLIUM_DRIVER=llvmpipe
+    wayfire -c "$CONFIG_FILE" || {
+        log "Wayfire failed to start. Falling back to console shell on tty1..."
+        exec /bin/sh
+    }
+}

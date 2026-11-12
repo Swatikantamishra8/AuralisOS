@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Install AuralisOS
+Comment=AuralisOS Graphical System Installer
+Exec=/usr/local/bin/auralis-installer
+Icon=system-software-install
+Categories=System;Settings;
+Terminal=false
+StartupNotify=true

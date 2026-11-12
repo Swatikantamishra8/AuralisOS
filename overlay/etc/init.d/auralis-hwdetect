@@ -8,8 +8,7 @@
 description="AuralisOS Bare-Metal Hardware Auto-Tuner"
 
 depend() {
-    need devfs udev
-    before wayfire
+    after devfs
 }
 
 start() {

@@ -40,6 +40,8 @@ profile_auralis() {
     kernel_flavors="lts"
     kernel_cmdline="modules=loop,squashfs,sd-mod,usb-storage,ntfs3 console=tty0 console=ttyS0,115200 binder.devices=binder,hwbinder,vndbinder quiet"
     syslinux_serial="0 115200"
+    syslinux_prompt=0
+    syslinux_timeout=20
 
     # Initramfs Storage & Bus Features for mkinitfs
     # Includes custom Phase 5 'ntfsloop' hook for booting from Windows C:\AuralisOS\rootfs.img
@@ -78,11 +80,13 @@ profile_auralis() {
     # - podman, distrobox: Rootless container runtime for .deb / .rpm translation
     apks="$apks shared-mime-info file p7zip podman distrobox"
 
-    # 6. Phase 5: Bare-Metal Auto-Tuner & Wi-Fi Stack
+    # 6. Phase 5: Bare-Metal Auto-Tuner, Disk Partitioning & Wi-Fi Stack
     # - pciutils, usbutils: Hardware identification (lspci -nn, lsusb)
     # - iwd, dhcpcd: Modern, fast, low-memory Wi-Fi daemon & DHCP client
     # - util-linux-misc: Provides rfkill for radio transmitter control
-    apks="$apks pciutils usbutils iwd dhcpcd util-linux-misc"
+    # - parted, e2fsprogs, dosfstools: Target storage partitioning & formatting for graphical installer
+    # - efibootmgr, nvme-cli: UEFI boot manager and NVMe disk tools
+    apks="$apks pciutils usbutils iwd dhcpcd util-linux-misc parted e2fsprogs dosfstools efibootmgr nvme-cli"
 
     # Flavor Resolution:
     # VM Mode: ultra-minimal, linux-firmware-none, 0MB firmware bloat for VirtualBox/QEMU

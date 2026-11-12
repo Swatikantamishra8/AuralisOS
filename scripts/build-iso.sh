@@ -54,6 +54,12 @@ fi
 if [ -f "${WORKSPACE_ROOT}/overlay/usr/local/bin/auralis-hydrate" ]; then
     chmod +x "${WORKSPACE_ROOT}/overlay/usr/local/bin/auralis-hydrate" 2>/dev/null || true
 fi
+if [ -f "${WORKSPACE_ROOT}/src/auralis-installer/backend.sh" ]; then
+    chmod +x "${WORKSPACE_ROOT}/src/auralis-installer/backend.sh" 2>/dev/null || true
+fi
+if [ -f "${WORKSPACE_ROOT}/src/auralis-installer/auralis-installer" ]; then
+    chmod +x "${WORKSPACE_ROOT}/src/auralis-installer/auralis-installer" 2>/dev/null || true
+fi
 
 # ------------------------------------------------------------------------------
 # 2. Dependency Verification
@@ -74,9 +80,9 @@ echo -e "${GREEN}[+] All prerequisite tools verified.${RESET}"
 # ------------------------------------------------------------------------------
 MKIMAGE_BIN=""
 for candidate in \
-    "/usr/local/bin/mkimage.sh" \
     "/opt/aports/scripts/mkimage.sh" \
-    "${WORKSPACE_ROOT}/mkimage.sh"; do
+    "${WORKSPACE_ROOT}/mkimage.sh" \
+    "/usr/local/bin/mkimage.sh"; do
     if [ -x "$candidate" ]; then
         MKIMAGE_BIN="$candidate"
         break
@@ -119,6 +125,10 @@ if command -v gcc >/dev/null 2>&1 && pkg-config --exists gtk4 2>/dev/null; then
         echo -e "    [*] Building auralis-store..."
         make -C "${WORKSPACE_ROOT}/src/auralis-store"
     fi
+    if [ -d "${WORKSPACE_ROOT}/src/auralis-installer" ]; then
+        echo -e "    [*] Building auralis-installer..."
+        make -C "${WORKSPACE_ROOT}/src/auralis-installer"
+    fi
     echo -e "${GREEN}[+] Native desktop applications built successfully.${RESET}"
 else
     echo -e "${YELLOW}[!] Host/Container missing native GTK4 compiler. Overlay will compile on demand.${RESET}"
@@ -134,6 +144,7 @@ fi
 
 # Prepare output & working directories
 mkdir -p "$OUT_DIR"
+rm -f "$OUT_DIR"/*.iso "$OUT_DIR"/*.sha256
 rm -rf "$WORKDIR"
 mkdir -p "$WORKDIR"
 

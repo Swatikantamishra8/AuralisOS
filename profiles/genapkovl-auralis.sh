@@ -29,6 +29,7 @@ TMP="$(mktemp -d /tmp/genapkovl-auralis.XXXXXX)"
 CLEANUP="$TMP"
 
 mkdir -p "$TMP"/etc
+mkdir -p "$TMP"/etc/apk
 mkdir -p "$TMP"/etc/runlevels/sysinit
 mkdir -p "$TMP"/etc/runlevels/boot
 mkdir -p "$TMP"/etc/runlevels/default
@@ -54,11 +55,13 @@ mkdir -p "$TMP"/usr/share/auralis
 mkdir -p "$TMP"/usr/share/auralis-shell
 mkdir -p "$TMP"/usr/share/auralis-taskmgr
 mkdir -p "$TMP"/usr/share/auralis-store
+mkdir -p "$TMP"/usr/share/auralis-installer
 mkdir -p "$TMP"/usr/share/backgrounds
 mkdir -p "$TMP"/var/lib/auralis/subsystems
 mkdir -p "$TMP"/var/lib/auralis/mnt
 mkdir -p "$TMP"/media/windows_c
 mkdir -p "$TMP"/root/.config
+mkdir -p "$TMP"/root/Desktop
 mkdir -p "$TMP"/var/log
 
 # ------------------------------------------------------------------------------
@@ -82,6 +85,50 @@ PRETTY_NAME="AuralisOS Liquid Glass Edition"
 VERSION="1.0"
 HOME_URL="https://auralis.org"
 BUG_REPORT_URL="https://github.com/BinduOS/AuralisOS/issues"
+EOF
+
+# ------------------------------------------------------------------------------
+# 1.1. Live APK World Package Specification
+#      Alpine diskless/live boot installs packages listed in /etc/apk/world
+#      from /media/cdrom/apks/<arch> into the root tmpfs at boot time.
+# ------------------------------------------------------------------------------
+cat > "$TMP"/etc/apk/world <<'EOF'
+alpine-base
+alpine-conf
+eudev
+kmod
+zram-init
+util-linux
+busybox
+busybox-extras
+shadow
+doas
+wayfire
+wayfire-plugins-extra
+seatd
+libseat
+gtk4.0
+gtk4-layer-shell
+mesa-dri-gallium
+mesa-va-gallium
+font-noto
+font-dejavu
+adwaita-icon-theme
+foot
+libinput
+shared-mime-info
+file
+p7zip
+pciutils
+usbutils
+iwd
+dhcpcd
+util-linux-misc
+parted
+e2fsprogs
+dosfstools
+efibootmgr
+nvme-cli
 EOF
 
 # ------------------------------------------------------------------------------
@@ -326,6 +373,7 @@ chmod +x "$TMP"/usr/local/bin/auralis-autologin
 
 # Configure inittab:
 # tty1: Auto-starts Wayfire + auralis-shell via seatd & auralis-autologin
+# tty2: Fallback console root shell (accessible via Ctrl+Alt+F2)
 # ttyS0: Serial console for headless hypervisors & recovery
 cat > "$TMP"/etc/inittab <<'EOF'
 # /etc/inittab - AuralisOS Inittab
@@ -335,6 +383,9 @@ cat > "$TMP"/etc/inittab <<'EOF'
 
 # Auto-start Liquid Glass Wayland GUI on tty1
 tty1::respawn:/sbin/getty -n -l /usr/local/bin/auralis-autologin 38400 tty1 linux
+
+# Console terminal fallback on tty2 (Ctrl+Alt+F2)
+tty2::respawn:/sbin/getty -n -l /bin/sh 38400 tty2 linux
 
 # Serial console emergency shell
 ttyS0::respawn:/sbin/getty -n -l /bin/sh 115200 ttyS0 vt100
@@ -448,7 +499,7 @@ fi
 # 8. Compile & Install Phase 2 & 4 Native Desktop Binaries (auralis-shell, auralis-taskmgr, auralis-store)
 # ------------------------------------------------------------------------------
 
-echo "[*] Wiring Native Desktop Applications (auralis-shell, auralis-taskmgr, auralis-store)..."
+echo "[*] Wiring Native Desktop Applications (auralis-shell, auralis-taskmgr, auralis-store, auralis-installer)..."
 
 if command -v gcc >/dev/null 2>&1 && pkg-config --exists gtk4 2>/dev/null; then
     echo "[*] Building auralis-shell from source..."
@@ -457,6 +508,8 @@ if command -v gcc >/dev/null 2>&1 && pkg-config --exists gtk4 2>/dev/null; then
     make -C "$WORKSPACE_ROOT/src/auralis-taskmgr" DESTDIR="$TMP" install || true
     echo "[*] Building auralis-store from source..."
     make -C "$WORKSPACE_ROOT/src/auralis-store" DESTDIR="$TMP" install || true
+    echo "[*] Building auralis-installer from source..."
+    make -C "$WORKSPACE_ROOT/src/auralis-installer" DESTDIR="$TMP" install || true
 fi
 
 # Fallback copy if binaries exist in workspace
@@ -472,6 +525,14 @@ if [ -f "$WORKSPACE_ROOT/src/auralis-store/auralis-store" ]; then
     cp "$WORKSPACE_ROOT/src/auralis-store/auralis-store" "$TMP/usr/local/bin/auralis-store"
     chmod +x "$TMP/usr/local/bin/auralis-store"
 fi
+if [ -f "$WORKSPACE_ROOT/src/auralis-installer/auralis-installer" ]; then
+    cp "$WORKSPACE_ROOT/src/auralis-installer/auralis-installer" "$TMP/usr/local/bin/auralis-installer"
+    chmod +x "$TMP/usr/local/bin/auralis-installer"
+fi
+if [ -f "$WORKSPACE_ROOT/src/auralis-installer/backend.sh" ]; then
+    cp "$WORKSPACE_ROOT/src/auralis-installer/backend.sh" "$TMP/usr/local/bin/auralis-installer-backend"
+    chmod +x "$TMP/usr/local/bin/auralis-installer-backend"
+fi
 
 # Copy CSS assets
 if [ -f "$WORKSPACE_ROOT/src/auralis-shell/style.css" ]; then
@@ -482,6 +543,10 @@ if [ -f "$WORKSPACE_ROOT/src/auralis-taskmgr/style.css" ]; then
 fi
 if [ -f "$WORKSPACE_ROOT/src/auralis-store/style.css" ]; then
     cp "$WORKSPACE_ROOT/src/auralis-store/style.css" "$TMP/usr/share/auralis-store/style.css"
+fi
+if [ -f "$WORKSPACE_ROOT/src/auralis-installer/style.css" ]; then
+    mkdir -p "$TMP/usr/share/auralis-installer"
+    cp "$WORKSPACE_ROOT/src/auralis-installer/style.css" "$TMP/usr/share/auralis-installer/style.css"
 fi
 
 # ------------------------------------------------------------------------------
@@ -517,6 +582,22 @@ Exec=foot -e /usr/local/bin/auralis-status
 Icon=help-about
 Categories=System;
 EOF
+
+cat > "$TMP"/usr/share/applications/auralis-installer.desktop <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=Install AuralisOS
+Comment=Install AuralisOS next to Windows or directly to disk
+Exec=/usr/local/bin/auralis-installer
+Icon=system-software-install
+Terminal=false
+Categories=System;Settings;
+StartupNotify=true
+EOF
+
+mkdir -p "$TMP"/root/Desktop
+cp "$TMP"/usr/share/applications/auralis-installer.desktop "$TMP"/root/Desktop/auralis-installer.desktop
+chmod +x "$TMP"/root/Desktop/auralis-installer.desktop 2>/dev/null || true
 
 # ------------------------------------------------------------------------------
 # 10. Network & SSH Configuration
