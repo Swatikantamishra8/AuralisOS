@@ -248,6 +248,7 @@ fi
 
 # Generate SHA256 Checksum
 (cd "$OUT_DIR" && sha256sum "$(basename "$TARGET_ISO")" > "$(basename "$TARGET_ISO").sha256")
+chmod -R a+rw "$OUT_DIR" 2>/dev/null || true
 
 ISO_SIZE_BYTES="$(stat -c%s "$TARGET_ISO" 2>/dev/null || stat -f%z "$TARGET_ISO" 2>/dev/null || wc -c < "$TARGET_ISO")"
 ISO_SIZE_MB=$(( ISO_SIZE_BYTES / 1024 / 1024 ))
