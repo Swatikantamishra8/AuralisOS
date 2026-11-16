@@ -32,6 +32,7 @@ This document details the prioritized list of usability improvements, user-frien
 | **UX-18** | `auralis-store` | Real-Time Subsystem Hydration Download Progress Meter | **P1** | 📋 Backlog |
 | **UX-19** | Audio Subsystem | PipeWire + WirePlumber Dynamic Audio Device Routing Profile | **P1** | 📋 Backlog |
 | **UX-20** | CI/CD | Automated GitHub Actions Multi-Flavor ISO Release Pipeline | **P0** | ✅ Implemented |
+| **UX-21** | Session / Overlay | Wayfire Boot Refusal on Bare Metal (`Unable to drop root`) | **P0** | ✅ Implemented |
 
 ---
 
@@ -217,3 +218,25 @@ This document details the prioritized list of usability improvements, user-frien
 - **Status**: Completed
 - **Solution Delivered**:
   - Authored `.github/workflows/build-iso.yml` configuring automated Docker Buildx caching, native application compilation, ISO generation (`metal` or `vm`), SHA256 checksum generation, artifact archival, and GitHub Releases publication on version tags.
+
+---
+
+### [UX-21] Wayfire Boot Refusal on Bare Metal (`Unable to drop root`)
+- **Component**: `overlay/usr/local/bin/auralis-session`, `genapkovl-auralis.sh`, `profiles/genapkovl-auralis.sh`
+- **Priority**: Critical (P0)
+- **Status**: Completed
+- **User Impact**: Physical bare-metal machines booting the live ISO failed to enter the graphical Wayland environment. The screen displayed:
+  ```text
+  Starting wayfire: 0.11.0-unknown ...
+  Unable to drop root (we shouldn't be able to restore it after setuid), refusing to start
+  [AURALIS-SESSION] Wayfire failed to start. Falling back to console shell on tty1...
+  /bin/sh: can't access tty; job control turned off
+  ```
+- **Root Cause**: Wayfire and wlroots enforce strict security policies rejecting execution under UID 0 (`root`). When Wayfire starts as root, its internal `drop_permissions()` check tests `setuid(0)` and `setgid(0)`. Because both succeed for root, Wayfire considers the root environment non-droppable and immediately aborts. The overlay previously only generated `root` in `/etc/inittab` and `auralis-autologin`, with no standard unprivileged user provisioned in `/etc/passwd`.
+- **Solution Delivered**:
+  - **Unprivileged User Provisioning**: Added standard desktop user `auralis` (UID 1000, GID 1000) to `/etc/passwd` and `/etc/shadow`.
+  - **Hardware Group Memberships**: Added `auralis` to groups `wheel, audio, video, input, seat, kvm, tty, dialout, users`.
+  - **Seat & Runtime Initialization**: Configured `/etc/conf.d/seatd` (`SEATD_OPTS="-g seat"`), `/run/user/1000` (mode 0700 owned by 1000:1000), and socket permissions on `/run/seatd.sock`.
+  - **Privilege Elevation**: Added passwordless escalation rules in `/etc/doas.conf` and `/etc/sudoers.d/auralis` for administrative tasks (e.g., installer backend, subsystem hydration).
+  - **Autologin & Session Guard**: Re-targeted `inittab` autologin on `tty1` to execute the session under user `auralis`, and implemented a security redirection guard in `auralis-session` to cleanly step down from root if manually invoked.
+  - **Home Directory Packaging**: Created `/home/auralis` with user configuration, desktop shortcuts, and `.profile`, and ensured `home` is packaged into `genapkovl` with UID 1000 ownership.
