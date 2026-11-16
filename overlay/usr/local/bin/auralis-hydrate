@@ -9,6 +9,15 @@
 
 set -e
 
+# Privileged commands require root elevation via doas or sudo
+if [ "$(id -u)" -ne 0 ] && [ "$1" = "enable" -o "$1" = "disable" -o "$1" = "purge" ]; then
+    if command -v doas >/dev/null 2>&1; then
+        exec doas "$0" "$@"
+    elif command -v sudo >/dev/null 2>&1; then
+        exec sudo "$0" "$@"
+    fi
+fi
+
 SUBSYS_DIR="/var/lib/auralis/subsystems"
 MOUNT_ROOT="/var/lib/auralis/mnt"
 PROFILE_D="/etc/profile.d/auralis-subsystems.sh"

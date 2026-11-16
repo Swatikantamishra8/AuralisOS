@@ -47,6 +47,7 @@ mkdir -p "$TMP"/etc/wayfire
 mkdir -p "$TMP"/etc/xdg
 mkdir -p "$TMP"/etc/auralis
 mkdir -p "$TMP"/etc/iwd
+mkdir -p "$TMP"/etc/sudoers.d
 mkdir -p "$TMP"/usr/bin
 mkdir -p "$TMP"/usr/local/bin
 mkdir -p "$TMP"/usr/share/applications
@@ -62,6 +63,10 @@ mkdir -p "$TMP"/var/lib/auralis/mnt
 mkdir -p "$TMP"/media/windows_c
 mkdir -p "$TMP"/root/.config
 mkdir -p "$TMP"/root/Desktop
+mkdir -p "$TMP"/home/auralis/.config
+mkdir -p "$TMP"/home/auralis/.config/wayfire
+mkdir -p "$TMP"/home/auralis/Desktop
+mkdir -p "$TMP"/home/auralis/Downloads
 mkdir -p "$TMP"/var/log
 
 # ------------------------------------------------------------------------------
@@ -103,6 +108,7 @@ busybox
 busybox-extras
 shadow
 doas
+sudo
 wayfire
 wayfire-plugins-extra
 seatd
@@ -230,19 +236,19 @@ KERNEL=="vhost-net", MODE="0660", GROUP="kvm"
 SUBSYSTEM=="input", MODE="0660", GROUP="input"
 EOF
 
-# Ensure group memberships for seatd, display and input
+# Ensure group memberships for seatd, display, audio, and input
 cat > "$TMP"/etc/group <<'EOF'
 root:x:0:root
 bin:x:1:root,bin,daemon
 daemon:x:2:root,bin,daemon
 sys:x:3:root,bin,adm
 adm:x:4:root,adm,daemon
-tty:x:5:
-disk:x:6:root,adm
+tty:x:5:auralis
+disk:x:6:root,adm,auralis
 lp:x:7:lp
 mem:x:8:
 kmem:x:9:
-wheel:x:10:root
+wheel:x:10:root,auralis
 floppy:x:11:
 mail:x:12:mail
 news:x:13:news
@@ -250,17 +256,60 @@ uucp:x:14:uucp
 man:x:15:man
 cron:x:16:cron
 console:x:17:
-audio:x:18:root
+audio:x:18:root,auralis
 cdrom:x:19:
-dialout:x:20:root
+dialout:x:20:root,auralis
 tape:x:26:root
-video:x:27:root
-netdev:x:28:
-kvm:x:34:root
-input:x:99:root
-seat:x:100:root
-users:x:1000:
+video:x:27:root,auralis
+netdev:x:28:auralis
+kvm:x:34:root,auralis
+input:x:99:root,auralis
+seat:x:100:root,auralis
+users:x:1000:auralis
+auralis:x:1000:auralis
 EOF
+
+# Ensure user accounts: root (UID 0) and unprivileged desktop user auralis (UID 1000)
+# Note: Wayfire compositor and wlroots refuse to start as UID 0 for security
+cat > "$TMP"/etc/passwd <<'EOF'
+root:x:0:0:root:/root:/bin/sh
+bin:x:1:1:bin:/bin:/sbin/nologin
+daemon:x:2:2:daemon:/sbin:/sbin/nologin
+adm:x:3:4:adm:/var/adm:/sbin/nologin
+lp:x:4:7:lp:/var/spool/lpd:/sbin/nologin
+sync:x:5:0:sync:/sbin:/bin/sync
+shutdown:x:6:0:shutdown:/sbin:/sbin/shutdown
+halt:x:7:0:halt:/sbin:/sbin/halt
+mail:x:8:12:mail:/var/spool/mail:/sbin/nologin
+news:x:9:13:news:/etc/news:/sbin/nologin
+uucp:x:10:14:uucp:/var/spool/uucp:/sbin/nologin
+operator:x:11:0:operator:/root:/sbin/nologin
+man:x:13:15:man:/usr/man:/sbin/nologin
+postmaster:x:14:12:postmaster:/var/spool/mail:/sbin/nologin
+cron:x:16:16:cron:/var/spool/cron:/sbin/nologin
+ftp:x:21:21::/var/lib/ftp:/sbin/nologin
+sshd:x:22:22:sshd:/var/empty:/sbin/nologin
+nobody:x:65534:65534:nobody:/:/sbin/nologin
+auralis:x:1000:1000:AuralisOS User:/home/auralis:/bin/sh
+EOF
+
+# Ensure seatd configuration
+cat > "$TMP"/etc/conf.d/seatd <<'EOF'
+SEATD_OPTS="-g seat"
+EOF
+
+# Unprivileged privilege elevation for standard auralis user
+cat > "$TMP"/etc/doas.conf <<'EOF'
+permit nopass :wheel
+permit nopass auralis
+EOF
+chmod 0400 "$TMP"/etc/doas.conf
+
+cat > "$TMP"/etc/sudoers.d/auralis <<'EOF'
+auralis ALL=(ALL) NOPASSWD: ALL
+%wheel ALL=(ALL) NOPASSWD: ALL
+EOF
+chmod 0440 "$TMP"/etc/sudoers.d/auralis
 
 # ------------------------------------------------------------------------------
 # 4. ZRAM Memory Swap & Kernel Virtual Memory Optimization
@@ -351,6 +400,8 @@ chmod +x "$TMP"/etc/local.d/00-binderfs.start
 if [ -f "$WORKSPACE_ROOT/overlay/etc/wayfire/wayfire.ini" ]; then
     cp "$WORKSPACE_ROOT/overlay/etc/wayfire/wayfire.ini" "$TMP/etc/wayfire/wayfire.ini"
     cp "$WORKSPACE_ROOT/overlay/etc/wayfire/wayfire.ini" "$TMP/root/.config/wayfire.ini"
+    cp "$WORKSPACE_ROOT/overlay/etc/wayfire/wayfire.ini" "$TMP/home/auralis/.config/wayfire/wayfire.ini"
+    cp "$WORKSPACE_ROOT/overlay/etc/wayfire/wayfire.ini" "$TMP/home/auralis/.config/wayfire.ini"
 fi
 
 # Install auralis-session launcher script
@@ -359,15 +410,58 @@ if [ -f "$WORKSPACE_ROOT/overlay/usr/local/bin/auralis-session" ]; then
     chmod +x "$TMP/usr/local/bin/auralis-session"
 fi
 
-# Autologin handler on tty1
+# Autologin handler on tty1 (launches unprivileged desktop session under user 'auralis')
 cat > "$TMP"/usr/local/bin/auralis-autologin <<'EOF'
 #!/bin/sh
-# Automatic root session launcher on tty1
-export USER=root
-export HOME=/root
+# Automatic desktop session launcher for unprivileged user 'auralis' on tty1
+# Wayfire and wlroots strictly refuse to run as root (UID 0)
+
+# Prepare runtime directory for UID 1000
+mkdir -p /run/user/1000
+chown -R 1000:1000 /run/user/1000 2>/dev/null || true
+chmod 0700 /run/user/1000
+chmod 1777 /run/user 2>/dev/null || true
+
+# Ensure home directory ownership
+chown -R 1000:1000 /home/auralis 2>/dev/null || true
+
+# Ensure seatd is running and socket permissions are correct
+if ! pgrep seatd >/dev/null 2>&1; then
+    if [ -x /etc/init.d/seatd ]; then
+        /etc/init.d/seatd start 2>/dev/null || true
+    fi
+    if ! pgrep seatd >/dev/null 2>&1 && [ -x /usr/bin/seatd ]; then
+        /usr/bin/seatd -g seat -l error -u root &
+        sleep 0.5
+    fi
+fi
+if [ -e /run/seatd.sock ]; then
+    chgrp seat /run/seatd.sock 2>/dev/null || true
+    chmod 0660 /run/seatd.sock 2>/dev/null || true
+fi
+
+# Ensure DRI card / render permissions
+if [ -d /dev/dri ]; then
+    chgrp video /dev/dri/* 2>/dev/null || true
+    chmod 0666 /dev/dri/* 2>/dev/null || true
+fi
+
+export USER=auralis
+export LOGNAME=auralis
+export HOME=/home/auralis
 export SHELL=/bin/sh
-cd /root
-exec /usr/local/bin/auralis-session
+export XDG_RUNTIME_DIR=/run/user/1000
+export SEATD_SOCK=/run/seatd.sock
+export LIBSEAT_BACKEND=seatd
+
+cd /home/auralis
+if command -v su >/dev/null 2>&1; then
+    exec su - auralis -s /bin/sh -c "/usr/local/bin/auralis-session"
+elif command -v doas >/dev/null 2>&1; then
+    exec doas -u auralis /usr/local/bin/auralis-session
+else
+    exec /usr/local/bin/auralis-session
+fi
 EOF
 chmod +x "$TMP"/usr/local/bin/auralis-autologin
 
@@ -394,7 +488,7 @@ ttyS0::respawn:/sbin/getty -n -l /bin/sh 115200 ttyS0 vt100
 ::shutdown:/sbin/openrc shutdown
 EOF
 
-# Passwordless root access
+# Passwordless root & auralis access
 cat > "$TMP"/etc/shadow <<'EOF'
 root::19000:0:99999:7:::
 bin:!::0:::::
@@ -414,6 +508,7 @@ cron:!::0:::::
 ftp:!::0:::::
 sshd:!::0:::::
 nobody:!::0:::::
+auralis::19000:0:99999:7:::
 EOF
 
 # ------------------------------------------------------------------------------
@@ -596,8 +691,10 @@ StartupNotify=true
 EOF
 
 mkdir -p "$TMP"/root/Desktop
+mkdir -p "$TMP"/home/auralis/Desktop
 cp "$TMP"/usr/share/applications/auralis-installer.desktop "$TMP"/root/Desktop/auralis-installer.desktop
-chmod +x "$TMP"/root/Desktop/auralis-installer.desktop 2>/dev/null || true
+cp "$TMP"/usr/share/applications/auralis-installer.desktop "$TMP"/home/auralis/Desktop/auralis-installer.desktop
+chmod +x "$TMP"/root/Desktop/auralis-installer.desktop "$TMP"/home/auralis/Desktop/auralis-installer.desktop 2>/dev/null || true
 
 # ------------------------------------------------------------------------------
 # 10. Network & SSH Configuration
@@ -733,14 +830,27 @@ elif [ -x /usr/local/bin/auralis-status ]; then
 fi
 EOF
 
+cat > "$TMP"/home/auralis/.profile <<'EOF'
+alias ll='ls -la'
+# If logged into tty1 and no Wayland display, launch GUI session
+if [ "$(tty 2>/dev/null)" = "/dev/tty1" ] && [ -z "$WAYLAND_DISPLAY" ]; then
+    exec /usr/local/bin/auralis-session
+elif [ -x /usr/local/bin/auralis-status ]; then
+    /usr/local/bin/auralis-status
+fi
+EOF
+
+# Ensure user directory permissions prior to archive packing
+chown -R 1000:1000 "$TMP"/home/auralis 2>/dev/null || true
+
 # ------------------------------------------------------------------------------
 # 12. Archive Generation (.apkovl.tar.gz)
 # ------------------------------------------------------------------------------
 
 ARCHIVE_NAME="$HOSTNAME.apkovl.tar.gz"
 
-# Pack overlay tarball preserving file ownership and permissions
-tar -c -C "$TMP" etc root usr var media | gzip -9n > "$ARCHIVE_NAME"
+# Pack overlay tarball preserving file ownership and permissions (including /home)
+tar -c -C "$TMP" etc root home usr var media | gzip -9n > "$ARCHIVE_NAME"
 
 # Copy also to /tmp if run by mkimage.sh
 cp "$ARCHIVE_NAME" "/tmp/$ARCHIVE_NAME" 2>/dev/null || true

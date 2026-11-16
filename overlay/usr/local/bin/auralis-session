@@ -9,6 +9,20 @@ log() {
     echo "[AURALIS-SESSION] $*"
 }
 
+# Security Guard: Wayfire and wlroots strictly refuse to execute as root (UID 0)
+if [ "$(id -u)" -eq 0 ]; then
+    log "Running as root. Wayfire security policy strictly forbids running as UID 0."
+    log "Safely transitioning session to standard user 'auralis'..."
+    if id auralis >/dev/null 2>&1; then
+        mkdir -p /run/user/1000
+        chown 1000:1000 /run/user/1000 2>/dev/null || true
+        chmod 0700 /run/user/1000
+        chmod 1777 /run/user 2>/dev/null || true
+        [ -e /run/seatd.sock ] && chgrp seat /run/seatd.sock 2>/dev/null && chmod 0660 /run/seatd.sock 2>/dev/null
+        exec su - auralis -s /bin/sh -c "/usr/local/bin/auralis-session $*"
+    fi
+fi
+
 log "Initializing AuralisOS Wayland Desktop Environment..."
 
 # ------------------------------------------------------------------------------
@@ -20,14 +34,18 @@ export XDG_SESSION_TYPE="wayland"
 export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
 
 if [ ! -d "$XDG_RUNTIME_DIR" ]; then
-    mkdir -p "$XDG_RUNTIME_DIR"
-    chmod 0700 "$XDG_RUNTIME_DIR"
+    mkdir -p "$XDG_RUNTIME_DIR" 2>/dev/null || true
 fi
+chmod 0700 "$XDG_RUNTIME_DIR" 2>/dev/null || true
 
 # Ensure seatd daemon is accessible and running
 if ! pgrep seatd >/dev/null 2>&1; then
     log "Starting seatd daemon..."
-    /usr/bin/seatd -g seat -l error -u root &
+    if [ "$(id -u)" -eq 0 ]; then
+        /usr/bin/seatd -g seat -l error -u root &
+    elif command -v doas >/dev/null 2>&1; then
+        doas /usr/bin/seatd -g seat -l error -u root &
+    fi
     sleep 0.5
 fi
 export SEATD_SOCK=/run/seatd.sock
@@ -99,7 +117,9 @@ fi
 # 3. Launch Wayfire Compositor with Auto-Fallback
 # ------------------------------------------------------------------------------
 CONFIG_FILE="/etc/wayfire/wayfire.ini"
-if [ -f "$HOME/.config/wayfire.ini" ]; then
+if [ -f "$HOME/.config/wayfire/wayfire.ini" ]; then
+    CONFIG_FILE="$HOME/.config/wayfire/wayfire.ini"
+elif [ -f "$HOME/.config/wayfire.ini" ]; then
     CONFIG_FILE="$HOME/.config/wayfire.ini"
 fi
 

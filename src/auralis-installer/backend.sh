@@ -5,6 +5,18 @@
 # Outputs: PROGRESS: <0-100> and STATUS: <message> on stdout for GUI consumption.
 # ==============================================================================
 
+# Ensure execution as root using doas/sudo if launched from unprivileged user session
+if [ "$(id -u)" -ne 0 ]; then
+    if command -v doas >/dev/null 2>&1; then
+        exec doas "$0" "$@"
+    elif command -v sudo >/dev/null 2>&1; then
+        exec sudo "$0" "$@"
+    else
+        echo "ERROR: Installer backend requires root privileges."
+        exit 1
+    fi
+fi
+
 set -e
 
 MODE="${1:-loopback}"     # "loopback" or "native"
@@ -113,7 +125,7 @@ fi
 progress 55 "Deploying AuralisOS base system files..."
 
 # Copy live rootfs excluding virtual filesystems and mount points
-for dir in bin sbin lib usr etc root var; do
+for dir in bin sbin lib usr etc root home var; do
     if [ -d "/$dir" ]; then
         mkdir -p "$TARGET_MNT/$dir"
         cp -a "/$dir/." "$TARGET_MNT/$dir/" 2>/dev/null || true

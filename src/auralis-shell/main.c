@@ -561,7 +561,10 @@ static void create_launcher_window(GtkApplication *app) {
     GtkWidget *footer_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
     gtk_widget_add_css_class(footer_box, "launcher-footer");
 
-    GtkWidget *user_lbl = gtk_label_new("❖ root @ auralis (<95MB Idle)");
+    const char *username = g_get_user_name();
+    char user_str[64];
+    snprintf(user_str, sizeof(user_str), "❖ %s @ auralis (<95MB Idle)", (username && strlen(username) > 0) ? username : "auralis");
+    GtkWidget *user_lbl = gtk_label_new(user_str);
     gtk_widget_add_css_class(user_lbl, "user-badge");
     gtk_box_append(GTK_BOX(footer_box), user_lbl);
 

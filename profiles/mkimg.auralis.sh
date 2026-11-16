@@ -54,8 +54,8 @@ profile_auralis() {
     # - alpine-base, alpine-conf: Musl libc, BusyBox userland, OpenRC init
     # - eudev, kmod: Hotplug device manager & kernel module loader for PCI/USB modalias matching
     # - zram-init: Automatic compressed RAM swap creation using zstd algorithm
-    # - util-linux, shadow, doas: Minimal system administration utilities
-    apks="alpine-base alpine-conf eudev kmod zram-init util-linux busybox busybox-extras shadow doas"
+    # - util-linux, shadow, doas, sudo: Minimal system administration utilities
+    apks="alpine-base alpine-conf eudev kmod zram-init util-linux busybox busybox-extras shadow doas sudo"
 
     # 2. Kernel packages
     apks="$apks linux-lts"
