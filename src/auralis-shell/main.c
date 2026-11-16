@@ -572,6 +572,11 @@ static void create_launcher_window(GtkApplication *app) {
     gtk_widget_set_hexpand(spacer, TRUE);
     gtk_box_append(GTK_BOX(footer_box), spacer);
 
+    GtkWidget *quick_dash = gtk_button_new_with_label("Dashboard");
+    gtk_widget_add_css_class(quick_dash, "control-btn");
+    g_signal_connect_swapped(quick_dash, "clicked", G_CALLBACK(launch_command), "/usr/local/bin/auralis-dashboard");
+    gtk_box_append(GTK_BOX(footer_box), quick_dash);
+
     GtkWidget *quick_tm = gtk_button_new_with_label("TaskMgr");
     gtk_widget_add_css_class(quick_tm, "control-btn");
     g_signal_connect(quick_tm, "clicked", G_CALLBACK(on_launch_taskmgr), NULL);
@@ -629,10 +634,13 @@ static void create_taskbar_window(GtkApplication *app) {
         const char *cmd;
         const char *check_file;
     } pinned_apps[] = {
+        { "Dashboard", "/usr/local/bin/auralis-dashboard", NULL },
+        { "Tour", "/usr/local/bin/auralis-welcome", NULL },
         { "Terminal", "foot", NULL },
         { "Store", "/usr/local/bin/auralis-store", NULL },
         { "TaskMgr", "/usr/local/bin/auralis-taskmgr", NULL },
         { "Install OS", "/usr/local/bin/auralis-installer", "/usr/local/bin/auralis-installer" },
+        { "Files", "foot -e /bin/sh -c 'echo \"=== Auralis File Explorer ===\"; ls -la ~; exec /bin/sh'", NULL },
         { "Status", "foot -e /usr/local/bin/auralis-status", NULL },
         { NULL, NULL, NULL }
     };

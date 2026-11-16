@@ -57,7 +57,11 @@ mkdir -p "$TMP"/usr/share/auralis-shell
 mkdir -p "$TMP"/usr/share/auralis-taskmgr
 mkdir -p "$TMP"/usr/share/auralis-store
 mkdir -p "$TMP"/usr/share/auralis-installer
+mkdir -p "$TMP"/usr/share/auralis-dashboard
+mkdir -p "$TMP"/usr/share/auralis-welcome
 mkdir -p "$TMP"/usr/share/backgrounds
+mkdir -p "$TMP"/usr/share/icons/hicolor/scalable/apps
+mkdir -p "$TMP"/usr/share/pixmaps
 mkdir -p "$TMP"/var/lib/auralis/subsystems
 mkdir -p "$TMP"/var/lib/auralis/mnt
 mkdir -p "$TMP"/media/windows_c
@@ -121,6 +125,7 @@ font-noto
 font-dejavu
 adwaita-icon-theme
 foot
+swaybg
 libinput
 shared-mime-info
 file
@@ -591,10 +596,25 @@ elif command -v go >/dev/null 2>&1 && [ -f "$WORKSPACE_ROOT/src/auralis-router/m
 fi
 
 # ------------------------------------------------------------------------------
-# 8. Compile & Install Phase 2 & 4 Native Desktop Binaries (auralis-shell, auralis-taskmgr, auralis-store)
+# 8. Compile & Install Phase 2 & 4 Native Desktop Binaries (auralis-shell, auralis-taskmgr, auralis-store, auralis-dashboard, auralis-welcome)
 # ------------------------------------------------------------------------------
 
-echo "[*] Wiring Native Desktop Applications (auralis-shell, auralis-taskmgr, auralis-store, auralis-installer)..."
+echo "[*] Wiring Native Desktop Applications (auralis-shell, auralis-taskmgr, auralis-store, auralis-installer, auralis-dashboard, auralis-welcome)..."
+
+# Copy Wallpapers, Icons, and System Pixmaps
+if [ -d "$WORKSPACE_ROOT/overlay/usr/share/backgrounds" ]; then
+    cp -r "$WORKSPACE_ROOT/overlay/usr/share/backgrounds/." "$TMP/usr/share/backgrounds/" 2>/dev/null || true
+fi
+if [ -d "$WORKSPACE_ROOT/overlay/usr/share/icons" ]; then
+    cp -r "$WORKSPACE_ROOT/overlay/usr/share/icons/." "$TMP/usr/share/icons/" 2>/dev/null || true
+fi
+if [ -d "$WORKSPACE_ROOT/overlay/usr/share/pixmaps" ]; then
+    cp -r "$WORKSPACE_ROOT/overlay/usr/share/pixmaps/." "$TMP/usr/share/pixmaps/" 2>/dev/null || true
+fi
+if [ -f "$WORKSPACE_ROOT/overlay/usr/local/bin/auralis-wallpaper" ]; then
+    cp "$WORKSPACE_ROOT/overlay/usr/local/bin/auralis-wallpaper" "$TMP/usr/local/bin/auralis-wallpaper"
+    chmod +x "$TMP/usr/local/bin/auralis-wallpaper"
+fi
 
 if command -v gcc >/dev/null 2>&1 && pkg-config --exists gtk4 2>/dev/null; then
     echo "[*] Building auralis-shell from source..."
@@ -605,6 +625,10 @@ if command -v gcc >/dev/null 2>&1 && pkg-config --exists gtk4 2>/dev/null; then
     make -C "$WORKSPACE_ROOT/src/auralis-store" DESTDIR="$TMP" install || true
     echo "[*] Building auralis-installer from source..."
     make -C "$WORKSPACE_ROOT/src/auralis-installer" DESTDIR="$TMP" install || true
+    echo "[*] Building auralis-dashboard from source..."
+    make -C "$WORKSPACE_ROOT/src/auralis-dashboard" DESTDIR="$TMP" install || true
+    echo "[*] Building auralis-welcome from source..."
+    make -C "$WORKSPACE_ROOT/src/auralis-welcome" DESTDIR="$TMP" install || true
 fi
 
 # Fallback copy if binaries exist in workspace
@@ -623,6 +647,15 @@ fi
 if [ -f "$WORKSPACE_ROOT/src/auralis-installer/auralis-installer" ]; then
     cp "$WORKSPACE_ROOT/src/auralis-installer/auralis-installer" "$TMP/usr/local/bin/auralis-installer"
     chmod +x "$TMP/usr/local/bin/auralis-installer"
+fi
+if [ -f "$WORKSPACE_ROOT/src/auralis-dashboard/auralis-dashboard" ]; then
+    cp "$WORKSPACE_ROOT/src/auralis-dashboard/auralis-dashboard" "$TMP/usr/local/bin/auralis-dashboard"
+    chmod +x "$TMP/usr/local/bin/auralis-dashboard"
+fi
+if [ -f "$WORKSPACE_ROOT/src/auralis-welcome/auralis-welcome" ]; then
+    cp "$WORKSPACE_ROOT/src/auralis-welcome/auralis-welcome" "$TMP/usr/local/bin/auralis-welcome"
+    chmod +x "$TMP/usr/local/bin/auralis-welcome"
+    ln -sf /usr/local/bin/auralis-welcome "$TMP/usr/local/bin/auralis-tour" 2>/dev/null || true
 fi
 if [ -f "$WORKSPACE_ROOT/src/auralis-installer/backend.sh" ]; then
     cp "$WORKSPACE_ROOT/src/auralis-installer/backend.sh" "$TMP/usr/local/bin/auralis-installer-backend"
@@ -643,10 +676,43 @@ if [ -f "$WORKSPACE_ROOT/src/auralis-installer/style.css" ]; then
     mkdir -p "$TMP/usr/share/auralis-installer"
     cp "$WORKSPACE_ROOT/src/auralis-installer/style.css" "$TMP/usr/share/auralis-installer/style.css"
 fi
+if [ -f "$WORKSPACE_ROOT/src/auralis-dashboard/style.css" ]; then
+    mkdir -p "$TMP/usr/share/auralis-dashboard"
+    cp "$WORKSPACE_ROOT/src/auralis-dashboard/style.css" "$TMP/usr/share/auralis-dashboard/style.css"
+fi
+if [ -f "$WORKSPACE_ROOT/src/auralis-welcome/style.css" ]; then
+    mkdir -p "$TMP/usr/share/auralis-welcome"
+    cp "$WORKSPACE_ROOT/src/auralis-welcome/style.css" "$TMP/usr/share/auralis-welcome/style.css"
+fi
 
 # ------------------------------------------------------------------------------
 # 9. Standard Desktop Entries (.desktop)
 # ------------------------------------------------------------------------------
+
+# Copy all application desktop definitions from overlay
+if [ -d "$WORKSPACE_ROOT/overlay/usr/share/applications" ]; then
+    cp "$WORKSPACE_ROOT/overlay/usr/share/applications/"*.desktop "$TMP/usr/share/applications/" 2>/dev/null || true
+fi
+
+cat > "$TMP"/usr/share/applications/auralis-dashboard.desktop <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=Auralis Dashboard
+Comment=Real-time RAM, CPU, and Subsystem Telemetry
+Exec=/usr/local/bin/auralis-dashboard
+Icon=auralis-dashboard
+Categories=System;Monitor;Settings;
+EOF
+
+cat > "$TMP"/usr/share/applications/auralis-welcome.desktop <<'EOF'
+[Desktop Entry]
+Type=Application
+Name=Auralis Apprenticeship
+Comment=Interactive Onboarding Tour & Cheatsheet
+Exec=/usr/local/bin/auralis-welcome
+Icon=auralis-welcome
+Categories=System;Documentation;Help;
+EOF
 
 cat > "$TMP"/usr/share/applications/auralis-taskmgr.desktop <<'EOF'
 [Desktop Entry]
@@ -654,7 +720,7 @@ Type=Application
 Name=Auralis Task Manager
 Comment=Real-time RAM and CPU Resource Monitor
 Exec=/usr/local/bin/auralis-taskmgr
-Icon=utilities-system-monitor
+Icon=auralis-taskmgr
 Categories=System;Monitor;
 EOF
 
@@ -674,7 +740,7 @@ Type=Application
 Name=Auralis Diagnostics
 Comment=Architectural Verification and Diagnostics
 Exec=foot -e /usr/local/bin/auralis-status
-Icon=help-about
+Icon=auralis-logo
 Categories=System;
 EOF
 
@@ -684,7 +750,7 @@ Type=Application
 Name=Install AuralisOS
 Comment=Install AuralisOS next to Windows or directly to disk
 Exec=/usr/local/bin/auralis-installer
-Icon=system-software-install
+Icon=auralis-installer
 Terminal=false
 Categories=System;Settings;
 StartupNotify=true
@@ -692,9 +758,11 @@ EOF
 
 mkdir -p "$TMP"/root/Desktop
 mkdir -p "$TMP"/home/auralis/Desktop
-cp "$TMP"/usr/share/applications/auralis-installer.desktop "$TMP"/root/Desktop/auralis-installer.desktop
-cp "$TMP"/usr/share/applications/auralis-installer.desktop "$TMP"/home/auralis/Desktop/auralis-installer.desktop
-chmod +x "$TMP"/root/Desktop/auralis-installer.desktop "$TMP"/home/auralis/Desktop/auralis-installer.desktop 2>/dev/null || true
+cp "$TMP"/usr/share/applications/auralis-installer.desktop "$TMP"/root/Desktop/auralis-installer.desktop 2>/dev/null || true
+cp "$TMP"/usr/share/applications/auralis-installer.desktop "$TMP"/home/auralis/Desktop/auralis-installer.desktop 2>/dev/null || true
+cp "$TMP"/usr/share/applications/auralis-welcome.desktop "$TMP"/home/auralis/Desktop/auralis-welcome.desktop 2>/dev/null || true
+cp "$TMP"/usr/share/applications/auralis-dashboard.desktop "$TMP"/home/auralis/Desktop/auralis-dashboard.desktop 2>/dev/null || true
+chmod +x "$TMP"/root/Desktop/*.desktop "$TMP"/home/auralis/Desktop/*.desktop 2>/dev/null || true
 
 # ------------------------------------------------------------------------------
 # 10. Network & SSH Configuration

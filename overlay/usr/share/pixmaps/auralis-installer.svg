@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="instGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4cc9f0"/>
+      <stop offset="100%" stop-color="#4361ee"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#10192e"/>
+  <rect width="124" height="124" x="2" y="2" rx="26" fill="none" stroke="#4cc9f0" stroke-width="1.5" stroke-opacity="0.4"/>
+  <!-- Storage Drive -->
+  <rect x="28" y="34" width="72" height="60" rx="10" fill="#1c2d52" stroke="#4cc9f0" stroke-width="3"/>
+  <circle cx="42" cy="78" r="4" fill="#4cc9f0"/>
+  <line x1="54" y1="78" x2="84" y2="78" stroke="#4cc9f0" stroke-width="3" stroke-linecap="round"/>
+  <!-- Download Arrow into Drive -->
+  <polygon points="64,20 78,38 68,38 68,54 60,54 60,38 50,38" fill="url(#instGrad)"/>
+</svg>

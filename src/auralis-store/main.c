@@ -577,6 +577,7 @@ static void on_app_activate(GtkApplication *app, gpointer user_data) {
     main_window = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(main_window), "Auralis Store & Subsystem Manager");
     gtk_window_set_default_size(GTK_WINDOW(main_window), 820, 580);
+    gtk_window_set_icon_name(GTK_WINDOW(main_window), "auralis-store");
     gtk_widget_add_css_class(main_window, "store-window");
 
     GtkWidget *root_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Auralis Dashboard
+GenericName=System Telemetry & Controls
+Comment=Real-time hardware gauges, memory footprint, and multi-world subsystem status
+Exec=/usr/local/bin/auralis-dashboard
+Icon=auralis-dashboard
+Terminal=false
+Categories=System;Monitor;Settings;
+StartupNotify=true

@@ -1,0 +1,74 @@
+#!/bin/sh
+# ==============================================================================
+# AuralisOS Wallpaper Engine & Switcher: /usr/local/bin/auralis-wallpaper
+# Liquid Glass Edition - Low Memory Wayland Background Daemon
+# ==============================================================================
+
+BG_DIR="/usr/share/backgrounds"
+CONFIG_FILE="${HOME:-/home/auralis}/.config/auralis/wallpaper.conf"
+
+mkdir -p "$(dirname "$CONFIG_FILE")" 2>/dev/null || true
+
+CHOSEN="$1"
+
+if [ -z "$CHOSEN" ]; then
+    if [ -f "$CONFIG_FILE" ]; then
+        CHOSEN="$(cat "$CONFIG_FILE" 2>/dev/null)"
+    fi
+    [ -z "$CHOSEN" ] && CHOSEN="dark"
+fi
+
+case "$CHOSEN" in
+    dark|default)
+        IMG="$BG_DIR/auralis-glass-dark.png"
+        NAME="dark"
+        ;;
+    aurora)
+        IMG="$BG_DIR/auralis-glass-aurora.png"
+        NAME="aurora"
+        ;;
+    cyber)
+        IMG="$BG_DIR/auralis-glass-cyber.png"
+        NAME="cyber"
+        ;;
+    random)
+        NAME=$(ls "$BG_DIR"/auralis-glass-*.png 2>/dev/null | sort -R | head -n1)
+        IMG="$NAME"
+        ;;
+    list)
+        echo "Available Liquid Glass Wallpapers:"
+        echo "  - dark   : Midnight Glass / Deep Onyx (Default)"
+        echo "  - aurora : Aurora Borealis Liquid Glass"
+        echo "  - cyber  : Cyber Obsidian & Neon Grid"
+        exit 0
+        ;;
+    *)
+        if [ -f "$CHOSEN" ]; then
+            IMG="$CHOSEN"
+            NAME="$CHOSEN"
+        elif [ -f "$BG_DIR/$CHOSEN" ]; then
+            IMG="$BG_DIR/$CHOSEN"
+            NAME="$CHOSEN"
+        else
+            IMG="$BG_DIR/auralis-glass-dark.png"
+            NAME="dark"
+        fi
+        ;;
+esac
+
+# Fallback to general glass if specific file missing
+if [ ! -f "$IMG" ]; then
+    IMG="$BG_DIR/auralis-glass.png"
+fi
+
+echo "$NAME" > "$CONFIG_FILE" 2>/dev/null || true
+
+# Kill previous wallpaper processes smoothly
+killall swaybg 2>/dev/null || true
+
+# Launch swaybg if available
+if command -v swaybg >/dev/null 2>&1; then
+    swaybg -i "$IMG" -m fill &
+elif command -v fbv >/dev/null 2>&1; then
+    fbv -c "$IMG" || true
+fi

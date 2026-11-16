@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="tourGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffb703"/>
+      <stop offset="100%" stop-color="#fb8500"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#141923"/>
+  <rect width="124" height="124" x="2" y="2" rx="26" fill="none" stroke="#ffb703" stroke-width="1.5" stroke-opacity="0.4"/>
+  <!-- Apprenticeship Compass / Star -->
+  <circle cx="64" cy="64" r="38" fill="none" stroke="#ffb703" stroke-width="3" stroke-opacity="0.4"/>
+  <polygon points="64,20 74,54 108,64 74,74 64,108 54,74 20,64 54,54" fill="url(#tourGrad)"/>
+  <circle cx="64" cy="64" r="7" fill="#ffffff"/>
+  <!-- Small orbital particle -->
+  <circle cx="92" cy="36" r="4" fill="#00e5ff"/>
+</svg>

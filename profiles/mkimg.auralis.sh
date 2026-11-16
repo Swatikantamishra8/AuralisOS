@@ -71,8 +71,9 @@ profile_auralis() {
     # - font-noto, font-dejavu: Crisp vector typography with minimal disk footprint
     # - adwaita-icon-theme: Essential system icons for desktop entries & tray
     # - foot: Ultra-lightweight Wayland terminal (2-3MB RAM footprint)
+    # - swaybg: Ultra-low-memory native Wayland wallpaper daemon
     # - libinput, eudev: Input event handling
-    apks="$apks wayfire wayfire-plugins-extra seatd libseat gtk4.0 gtk4-layer-shell mesa-dri-gallium mesa-va-gallium font-noto font-dejavu adwaita-icon-theme foot libinput"
+    apks="$apks wayfire wayfire-plugins-extra seatd libseat gtk4.0 gtk4-layer-shell mesa-dri-gallium mesa-va-gallium font-noto font-dejavu adwaita-icon-theme foot swaybg libinput"
 
     # 5. Phase 3 & 4: Universal 4-World Binary Router & Subsystem Tooling
     # - shared-mime-info, file: MIME type database and file format sniffing

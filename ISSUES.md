@@ -27,12 +27,15 @@ This document details the prioritized list of usability improvements, user-frien
 | **UX-13** | `auralis-shell` | Dynamic Taskbar Pin for "Install OS" on Live Environment | **P1** | ✅ Implemented |
 | **UX-14** | `installer/windows` | Clean Up Legacy Development Paths & Corrupt Dummy EFI Fallback | **P0** | ✅ Implemented |
 | **UX-15** | Global Scripts | Standardize Repository URLs & Attribution Across Overlays | **P1** | ✅ Implemented |
-| **UX-16** | Desktop Shell | First-Boot "Welcome to AuralisOS" Interactive Onboarding Tour | **P1** | 📋 Backlog |
+| **UX-16** | Desktop Shell | First-Boot "Auralis Apprenticeship" Interactive Onboarding Tour | **P1** | ✅ Implemented |
 | **UX-17** | `auralis-shell` | Native GDBus Scanned Wi-Fi SSID Dropdown in Control Center | **P1** | 📋 Backlog |
 | **UX-18** | `auralis-store` | Real-Time Subsystem Hydration Download Progress Meter | **P1** | 📋 Backlog |
 | **UX-19** | Audio Subsystem | PipeWire + WirePlumber Dynamic Audio Device Routing Profile | **P1** | 📋 Backlog |
 | **UX-20** | CI/CD | Automated GitHub Actions Multi-Flavor ISO Release Pipeline | **P0** | ✅ Implemented |
 | **UX-21** | Session / Overlay | Wayfire Boot Refusal on Bare Metal (`Unable to drop root`) | **P0** | ✅ Implemented |
+| **UX-22** | `auralis-dashboard` | Real-Time Hardware Telemetry & Subsystem Dashboard (<super> D) | **P0** | ✅ Implemented |
+| **UX-23** | Desktop / Graphics | Curated Liquid Glass Wallpaper Suite & `auralis-wallpaper` Switcher | **P1** | ✅ Implemented |
+| **UX-24** | Desktop / Theme | Bespoke Liquid Glass SVG & PNG Application Icon Suite | **P1** | ✅ Implemented |
 
 ---
 
@@ -184,10 +187,19 @@ This document details the prioritized list of usability improvements, user-frien
 
 ---
 
-### [UX-16] Onboarding Tour / Welcome Guide (Roadmap Item)
-- **Component**: New Application `auralis-welcome`
-- **Priority**: Medium (P1)
-- **Description**: Provide a 3-slide introductory guide highlighting core hotkeys, gesture navigation, and demonstrating how to run Windows `.exe` and Android `.apk` files.
+### [UX-16] First-Boot "Auralis Apprenticeship" Interactive Onboarding Tour
+- **Component**: `src/auralis-welcome/` & `overlay/usr/share/applications/auralis-welcome.desktop`
+- **Priority**: High (P1)
+- **Status**: Completed
+- **User Impact**: New users booted into an unfamiliar ultra-low-memory Wayland desktop without guidance on keyboard shortcuts, how to launch multi-world apps, or how modular hydration works.
+- **Solution Delivered**:
+  - Authored `auralis-welcome` (Auralis Apprenticeship), a 5-step interactive GTK4 onboarding carousel explaining:
+    1. The <95MB RAM philosophy and Alpine/musl/OpenRC foundation.
+    2. Essential desktop shortcuts (<kbd>Super</kbd>, <kbd>Super+D</kbd>, <kbd>Ctrl+Shift+Esc</kbd>, <kbd>Super+Enter</kbd>).
+    3. Multi-World Universal Binary Router (Windows, Android, Linux, macOS).
+    4. Modular Hydration and zero-idle-memory subsystem standby.
+    5. Dual-boot installation options (Windows Loopback co-existence vs Bare Metal).
+  - Pinned to desktop, taskbar, start menu, and autostarted on first live boot.
 
 ---
 
@@ -240,3 +252,46 @@ This document details the prioritized list of usability improvements, user-frien
   - **Privilege Elevation**: Added passwordless escalation rules in `/etc/doas.conf` and `/etc/sudoers.d/auralis` for administrative tasks (e.g., installer backend, subsystem hydration).
   - **Autologin & Session Guard**: Re-targeted `inittab` autologin on `tty1` to execute the session under user `auralis`, and implemented a security redirection guard in `auralis-session` to cleanly step down from root if manually invoked.
   - **Home Directory Packaging**: Created `/home/auralis` with user configuration, desktop shortcuts, and `.profile`, and ensured `home` is packaged into `genapkovl` with UID 1000 ownership.
+
+---
+
+### [UX-22] Real-Time System Telemetry & Subsystem Dashboard (`auralis-dashboard`)
+- **Component**: `src/auralis-dashboard/`, `overlay/etc/wayfire/wayfire.ini`
+- **Priority**: High (P0)
+- **Status**: Completed
+- **User Impact**: Users lacked an immediate, unified view of system resource consumption (proving the <95MB RAM achievement) and had to check multi-world subsystem hydration status via CLI commands.
+- **Solution Delivered**:
+  - Developed `auralis-dashboard`, a native GTK4 Liquid Glass telemetry center.
+  - Live animated gauges: RAM usage (<95MB Idle badge), CPU load from `/proc/stat`, ZRAM swap allocation, and storage utilization.
+  - Multi-world subsystem cards displaying live mount/standby states for Wine, Waydroid, Distrobox, and Darling.
+  - Integrated hotkey `<super> D` in Wayfire and pinned trigger in desktop taskbar.
+
+---
+
+### [UX-23] Curated Liquid Glass Wallpaper Suite & `auralis-wallpaper` Switcher
+- **Component**: `overlay/usr/share/backgrounds/`, `overlay/usr/local/bin/auralis-wallpaper`
+- **Priority**: High (P1)
+- **Status**: Completed
+- **User Impact**: Missing background assets led to a blank fallback screen on boot, and users had no straightforward mechanism to change wallpapers.
+- **Solution Delivered**:
+  - Created a curated suite of 3 high-resolution Liquid Glass wallpapers: `auralis-glass-dark.png` (Midnight Glass), `auralis-glass-aurora.png` (Emerald & Sapphire Aurora), and `auralis-glass-cyber.png` (Cyber Obsidian Grid).
+  - Authored `/usr/local/bin/auralis-wallpaper` background engine powered by `swaybg` with dynamic cycling and persistent configuration in `~/.config/auralis/wallpaper.conf`.
+  - Added 1-click "Change Wallpaper" action inside the Dashboard.
+
+---
+
+### [UX-24] Bespoke Liquid Glass Vector & Raster Icon Suite
+- **Component**: `overlay/usr/share/icons/hicolor/scalable/apps/`, `overlay/usr/share/pixmaps/`
+- **Priority**: High (P1)
+- **Status**: Completed
+- **User Impact**: Applications displayed generic placeholder icons (`utilities-system-monitor`, `system-run`), diminishing the bespoke aesthetic of the Liquid Glass desktop.
+- **Solution Delivered**:
+  - Authored a full vector SVG and raster 128x128 PNG icon theme for:
+    - `auralis-logo`: Signature glowing diamond glass prism.
+    - `auralis-dashboard`: Live gauge telemetry icon.
+    - `auralis-welcome`: Apprenticeship compass & journey star.
+    - `auralis-store`: Modular hydration package icon.
+    - `auralis-taskmgr`: Pulse telemetry waveform icon.
+    - `auralis-installer`: Storage disk and lightning deployment icon.
+    - `auralis-router`: 4-World unified hub icon.
+  - Integrated icons into `.desktop` files, taskbar buttons, and window headers.

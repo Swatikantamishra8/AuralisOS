@@ -299,6 +299,7 @@ static void activate(GtkApplication *gtk_app, gpointer user_data) {
     gtk_window_set_title(GTK_WINDOW(app->window), "AuralisOS System Installer");
     gtk_window_set_default_size(GTK_WINDOW(app->window), 720, 520);
     gtk_window_set_resizable(GTK_WINDOW(app->window), FALSE);
+    gtk_window_set_icon_name(GTK_WINDOW(app->window), "auralis-installer");
 
     /* Apply CSS Styling */
     GtkCssProvider *css = gtk_css_provider_new();

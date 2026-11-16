@@ -92,14 +92,16 @@ installer-bin:
 # 4. Compile All Native Desktop Applications (GTK4 C & Go)
 # ------------------------------------------------------------------------------
 desktop-bins: router-bin installer-bin
-	@echo "[*] Compiling native C applications (shell, taskmgr, store, installer)..."
+	@echo "[*] Compiling native C applications (shell, taskmgr, store, installer, dashboard, welcome)..."
 	@if [ -f "/.dockerenv" ] || [ -f "/etc/alpine-release" ]; then \
 		make -C src/auralis-shell; \
 		make -C src/auralis-taskmgr; \
 		make -C src/auralis-store; \
 		make -C src/auralis-installer; \
+		make -C src/auralis-dashboard; \
+		make -C src/auralis-welcome; \
 	else \
-		$(DOCKER_CMD) $(IMAGE_NAME) /bin/bash -c "make -C src/auralis-shell && make -C src/auralis-taskmgr && make -C src/auralis-store && make -C src/auralis-installer"; \
+		$(DOCKER_CMD) $(IMAGE_NAME) /bin/bash -c "make -C src/auralis-shell && make -C src/auralis-taskmgr && make -C src/auralis-store && make -C src/auralis-installer && make -C src/auralis-dashboard && make -C src/auralis-welcome"; \
 	fi
 	@echo "[+] All native applications built successfully."
 
