@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   build:
-    name: Build AuralisOS ISO (${{ inputs.flavor || (startsWith(github.ref, 'refs/tags/') && 'metal' || 'vm') }})
+    name: Build AuralisOS ISO (${{ inputs.flavor || 'metal' }})
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -48,7 +48,7 @@ jobs:
 
       - name: Compile AuralisOS Bootable ISO
         run: |
-          FLAVOR="${{ inputs.flavor || (startsWith(github.ref, 'refs/tags/') && 'metal' || 'vm') }}"
+          FLAVOR="${{ inputs.flavor || 'metal' }}"
           echo "Building flavor: $FLAVOR"
           mkdir -p "${{ github.workspace }}/dist"
           docker run --privileged --rm -v "${{ github.workspace }}:/workspace" auralis-builder:latest \

@@ -91,7 +91,7 @@ done
 
 if [ -z "$MKIMAGE_BIN" ]; then
     echo -e "${YELLOW}[*] mkimage.sh not found locally. Cloning Alpine aports repository...${RESET}"
-    git clone --depth 1 https://gitlab.alpinelinux.org/alpine/aports.git /opt/aports
+    git clone --depth 1 https://github.com/alpinelinux/aports.git /opt/aports
     MKIMAGE_BIN="/opt/aports/scripts/mkimage.sh"
     chmod +x "$MKIMAGE_BIN"
 fi
@@ -158,10 +158,37 @@ export PATH="${WORKSPACE_ROOT}:${PATH}"
 
 # Ensure signing keys are exported if available
 if [ -z "${PACKAGER_PRIVKEY:-}" ]; then
-    PRIVKEY="$(ls /root/.abuild/*.rsa 2>/dev/null | head -n1 || true)"
+    PRIVKEY="$(ls /root/.abuild/*.rsa /home/*/.abuild/*.rsa 2>/dev/null | head -n1 || true)"
     if [ -n "$PRIVKEY" ]; then
         export PACKAGER_PRIVKEY="$PRIVKEY"
+    elif command -v abuild-keygen >/dev/null 2>&1; then
+        mkdir -p /root/.abuild
+        abuild-keygen -a -n 2>/dev/null || true
+        PRIVKEY="$(ls /root/.abuild/*.rsa 2>/dev/null | head -n1 || true)"
+        if [ -n "$PRIVKEY" ]; then
+            export PACKAGER_PRIVKEY="$PRIVKEY"
+            cp -f /root/.abuild/*.rsa.pub /etc/apk/keys/ 2>/dev/null || true
+        fi
     fi
+fi
+
+# Register custom mkinitfs hooks and features
+if [ -d "${WORKSPACE_ROOT}/overlay/etc/mkinitfs/features.d" ]; then
+    mkdir -p /etc/mkinitfs/features.d
+    cp -f "${WORKSPACE_ROOT}"/overlay/etc/mkinitfs/features.d/* /etc/mkinitfs/features.d/ 2>/dev/null || true
+fi
+if [ -d "${WORKSPACE_ROOT}/overlay/usr/share/mkinitfs/hooks" ]; then
+    mkdir -p /usr/share/mkinitfs/hooks
+    cp -f "${WORKSPACE_ROOT}"/overlay/usr/share/mkinitfs/hooks/* /usr/share/mkinitfs/hooks/ 2>/dev/null || true
+fi
+
+# Synchronize profile and genapkovl into mkimage search paths ($HOME/.mkimage and aports)
+mkdir -p "$HOME/.mkimage"
+cp -f "${WORKSPACE_ROOT}/mkimg.auralis.sh" "$HOME/.mkimage/mkimg.auralis.sh" 2>/dev/null || true
+cp -f "${WORKSPACE_ROOT}/genapkovl-auralis.sh" "$HOME/.mkimage/genapkovl-auralis.sh" 2>/dev/null || true
+if [ -d "/opt/aports/scripts" ]; then
+    cp -f "${WORKSPACE_ROOT}/mkimg.auralis.sh" "/opt/aports/scripts/mkimg.auralis.sh" 2>/dev/null || true
+    cp -f "${WORKSPACE_ROOT}/genapkovl-auralis.sh" "/opt/aports/scripts/genapkovl-auralis.sh" 2>/dev/null || true
 fi
 
 case "$FLAVOR" in

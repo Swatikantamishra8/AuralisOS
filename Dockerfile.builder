@@ -66,7 +66,7 @@ RUN apk add --no-cache \
     file
 
 # 3. Clone aports repository to provide official Alpine mkimage.sh tooling and base profiles
-RUN git clone --depth 1 https://gitlab.alpinelinux.org/alpine/aports.git /opt/aports \
+RUN git clone --depth 1 https://github.com/alpinelinux/aports.git /opt/aports \
     && ln -sf /opt/aports/scripts/mkimage.sh /usr/local/bin/mkimage.sh \
     && chmod +x /usr/local/bin/mkimage.sh
 
