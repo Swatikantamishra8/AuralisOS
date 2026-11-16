@@ -25,7 +25,7 @@ profile_auralis() {
     # OS Identification & ISO Metadata
     title="AuralisOS"
     desc="AuralisOS Ultra-Low-Memory Linux Distribution (<95MB RAM Idle)"
-    url="https://github.com/BinduOS/AuralisOS"
+    url="https://github.com/Swatikantamishra8/AuralisOS"
     image_name="auralis-os"
     image_ext="iso"
     output_format="iso"

@@ -84,7 +84,7 @@ ID=auralis
 PRETTY_NAME="AuralisOS Liquid Glass Edition"
 VERSION="1.0"
 HOME_URL="https://auralis.org"
-BUG_REPORT_URL="https://github.com/BinduOS/AuralisOS/issues"
+BUG_REPORT_URL="https://github.com/Swatikantamishra8/AuralisOS/issues"
 EOF
 
 # ------------------------------------------------------------------------------

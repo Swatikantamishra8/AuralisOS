@@ -188,7 +188,8 @@ menuentry "Windows Boot Manager" --class windows --class os {
 		candidates := []string{
 			filepath.Join(baseDir, srcName),
 			filepath.Join(baseDir, "boot", srcName),
-			filepath.Join(`C:\Apps\BinduOS\dist`, srcName),
+			filepath.Join(baseDir, "dist", srcName),
+			filepath.Join(TargetDir, "boot", srcName),
 		}
 		for _, c := range candidates {
 			if _, err := os.Stat(c); err == nil {

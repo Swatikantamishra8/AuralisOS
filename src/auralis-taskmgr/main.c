@@ -178,6 +178,15 @@ static gboolean refresh_process_list(gpointer user_data) {
     DIR *proc_dir = opendir("/proc");
     if (!proc_dir) return G_SOURCE_CONTINUE;
 
+    /* Preserve user's row selection before clearing */
+    GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(tree_view));
+    GtkTreeModel *sel_model = NULL;
+    GtkTreeIter sel_iter;
+    pid_t selected_pid = -1;
+    if (gtk_tree_selection_get_selected(sel, &sel_model, &sel_iter)) {
+        gtk_tree_model_get(sel_model, &sel_iter, COL_PID, &selected_pid, -1);
+    }
+
     ProcTick *new_ticks = malloc(sizeof(ProcTick) * 2048);
     size_t new_ticks_count = 0;
 
@@ -270,6 +279,24 @@ static gboolean refresh_process_list(gpointer user_data) {
     prev_proc_ticks = new_ticks;
     prev_proc_ticks_count = new_ticks_count;
 
+    /* Restore user's row selection if previously selected */
+    if (selected_pid > 0) {
+        GtkTreeIter it;
+        gboolean valid = gtk_tree_model_get_iter_first(GTK_TREE_MODEL(list_store), &it);
+        while (valid) {
+            pid_t p = 0;
+            gtk_tree_model_get(GTK_TREE_MODEL(list_store), &it, COL_PID, &p, -1);
+            if (p == selected_pid) {
+                GtkTreeIter filter_iter;
+                if (gtk_tree_model_filter_convert_child_iter_to_iter(filter_model, &filter_iter, &it)) {
+                    gtk_tree_selection_select_iter(sel, &filter_iter);
+                }
+                break;
+            }
+            valid = gtk_tree_model_iter_next(GTK_TREE_MODEL(list_store), &it);
+        }
+    }
+
     snprintf(buf, sizeof(buf), "Active Processes: %d | Idle Budget: <95 MB | ZRAM: zstd active", process_count);
     gtk_label_set_text(GTK_LABEL(lbl_status), buf);
 
@@ -290,6 +317,15 @@ static void on_kill_process_clicked(GtkButton *btn, gpointer user_data) {
         pid_t pid;
         char *name = NULL;
         gtk_tree_model_get(model, &iter, COL_PID, &pid, COL_NAME, &name, -1);
+
+        /* Protect core session daemons from accidental termination */
+        if (pid <= 1 || (name && (strcmp(name, "wayfire") == 0 || strcmp(name, "seatd") == 0 || strcmp(name, "auralis-shell") == 0))) {
+            char msg[128];
+            snprintf(msg, sizeof(msg), "Protected system process '%s' (PID %d) cannot be killed.", name ? name : "system", pid);
+            gtk_label_set_text(GTK_LABEL(lbl_status), msg);
+            g_free(name);
+            return;
+        }
 
         if (pid > 1) {
             /* Attempt graceful SIGTERM, then escalate if needed */

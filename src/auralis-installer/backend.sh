@@ -148,6 +148,15 @@ fi
 # Set root password
 echo "root:$PASSWORD_VAL" | chroot "$TARGET_MNT" chpasswd 2>/dev/null || true
 
+# Mark target as installed and disable live installer autostart
+mkdir -p "$TARGET_MNT/etc/auralis"
+touch "$TARGET_MNT/etc/auralis/installed"
+sed -i '/installer = /d' "$TARGET_MNT/etc/wayfire/wayfire.ini" 2>/dev/null || true
+rm -f "$TARGET_MNT/root/Desktop/auralis-installer.desktop" 2>/dev/null || true
+if [ -n "$USERNAME_VAL" ]; then
+    rm -f "$TARGET_MNT/home/$USERNAME_VAL/Desktop/auralis-installer.desktop" 2>/dev/null || true
+fi
+
 # ==============================================================================
 # Bootloader & Kernel Configuration
 # ==============================================================================

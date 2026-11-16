@@ -17,7 +17,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <signal.h>
 
+#include <glib.h>
+#include <glib-unix.h>
 #include <gtk/gtk.h>
 #include <gtk4-layer-shell/gtk4-layer-shell.h>
 
@@ -360,6 +363,35 @@ static void on_launch_taskmgr(GtkButton *btn, gpointer user_data) {
     if (control_popover) gtk_popover_popdown(GTK_POPOVER(control_popover));
 }
 
+static void on_volume_changed(GtkRange *range, gpointer user_data) {
+    (void)user_data;
+    int vol = (int)gtk_range_get_value(range);
+    char cmd[256];
+    snprintf(cmd, sizeof(cmd),
+             "wpctl set-volume @DEFAULT_AUDIO_SINK@ %d%% 2>/dev/null || "
+             "amixer -q sset Master %d%% 2>/dev/null || "
+             "pactl set-sink-volume @DEFAULT_SINK@ %d%% 2>/dev/null",
+             vol, vol, vol);
+    launch_command(cmd);
+}
+
+static void on_brightness_changed(GtkRange *range, gpointer user_data) {
+    (void)user_data;
+    int bri = (int)gtk_range_get_value(range);
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd),
+             "brightnessctl set %d%% 2>/dev/null || "
+             "sh -c 'for b in /sys/class/backlight/*; do [ -d \"$b\" ] && max=$(cat \"$b/max_brightness\") && echo $((max * %d / 100)) > \"$b/brightness\"; done' 2>/dev/null",
+             bri, bri);
+    launch_command(cmd);
+}
+
+static void on_launch_wifi(GtkButton *btn, gpointer user_data) {
+    (void)btn; (void)user_data;
+    launch_command("foot -e /bin/sh -c 'command -v iwctl >/dev/null 2>&1 && exec iwctl || (command -v nmtui >/dev/null 2>&1 && exec nmtui || exec /bin/sh)'");
+    if (control_popover) gtk_popover_popdown(GTK_POPOVER(control_popover));
+}
+
 /* ------------------------------------------------------------------------------
  * UI Construction: Quick Control Center Popover
  * ------------------------------------------------------------------------------ */
@@ -388,12 +420,19 @@ static GtkWidget *create_control_center_popover(GtkWidget *parent_btn) {
     g_signal_connect(btn_tm, "clicked", G_CALLBACK(on_launch_taskmgr), NULL);
     gtk_box_append(GTK_BOX(vbox), btn_tm);
 
+    /* Wi-Fi & Network Settings */
+    GtkWidget *btn_wifi = gtk_button_new_with_label("📶 Wi-Fi & Network (iwctl)");
+    gtk_widget_add_css_class(btn_wifi, "control-btn");
+    g_signal_connect(btn_wifi, "clicked", G_CALLBACK(on_launch_wifi), NULL);
+    gtk_box_append(GTK_BOX(vbox), btn_wifi);
+
     /* Audio Volume Slider */
     GtkWidget *lbl_vol = gtk_label_new("Master Volume");
     gtk_widget_set_halign(lbl_vol, GTK_ALIGN_START);
     gtk_box_append(GTK_BOX(vbox), lbl_vol);
     GtkWidget *slider_vol = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 100, 5);
     gtk_range_set_value(GTK_RANGE(slider_vol), 75);
+    g_signal_connect(slider_vol, "value-changed", G_CALLBACK(on_volume_changed), NULL);
     gtk_box_append(GTK_BOX(vbox), slider_vol);
 
     /* Display Brightness Slider */
@@ -402,6 +441,7 @@ static GtkWidget *create_control_center_popover(GtkWidget *parent_btn) {
     gtk_box_append(GTK_BOX(vbox), lbl_bri);
     GtkWidget *slider_bri = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 10, 100, 5);
     gtk_range_set_value(GTK_RANGE(slider_bri), 85);
+    g_signal_connect(slider_bri, "value-changed", G_CALLBACK(on_brightness_changed), NULL);
     gtk_box_append(GTK_BOX(vbox), slider_bri);
 
     /* Separator */
@@ -584,15 +624,20 @@ static void create_taskbar_window(GtkApplication *app) {
     struct {
         const char *label;
         const char *cmd;
+        const char *check_file;
     } pinned_apps[] = {
-        { "Terminal", "foot" },
-        { "Store", "/usr/local/bin/auralis-store" },
-        { "TaskMgr", "/usr/local/bin/auralis-taskmgr" },
-        { "Status", "/usr/local/bin/auralis-status" },
-        { NULL, NULL }
+        { "Terminal", "foot", NULL },
+        { "Store", "/usr/local/bin/auralis-store", NULL },
+        { "TaskMgr", "/usr/local/bin/auralis-taskmgr", NULL },
+        { "Install OS", "/usr/local/bin/auralis-installer", "/usr/local/bin/auralis-installer" },
+        { "Status", "foot -e /usr/local/bin/auralis-status", NULL },
+        { NULL, NULL, NULL }
     };
 
     for (int i = 0; pinned_apps[i].label != NULL; i++) {
+        if (pinned_apps[i].check_file && access(pinned_apps[i].check_file, X_OK) != 0) {
+            continue;
+        }
         GtkWidget *pbtn = gtk_button_new_with_label(pinned_apps[i].label);
         gtk_widget_add_css_class(pbtn, "task-item");
         g_signal_connect(pbtn, "clicked", G_CALLBACK(on_task_pinned_clicked), (gpointer)pinned_apps[i].cmd);
@@ -605,14 +650,22 @@ static void create_taskbar_window(GtkApplication *app) {
     gtk_box_append(GTK_BOX(bar_box), spacer);
 
     /* 3. System Tray Elements */
-    /* RAM Indicator */
+    /* RAM Indicator (Clickable: opens Task Manager) */
     lbl_ram = gtk_label_new("RAM: ... MB");
     gtk_widget_add_css_class(lbl_ram, "tray-pill");
+    gtk_widget_set_tooltip_text(lbl_ram, "Click to open Task Manager");
+    GtkGesture *click_ram = gtk_gesture_click_new();
+    g_signal_connect_swapped(click_ram, "released", G_CALLBACK(on_launch_taskmgr), NULL);
+    gtk_widget_add_controller(lbl_ram, GTK_EVENT_CONTROLLER(click_ram));
     gtk_box_append(GTK_BOX(bar_box), lbl_ram);
 
-    /* Network Indicator */
+    /* Network Indicator (Clickable: opens Wi-Fi / Network setup) */
     lbl_net = gtk_label_new("NET ●");
     gtk_widget_add_css_class(lbl_net, "tray-pill");
+    gtk_widget_set_tooltip_text(lbl_net, "Click for Wi-Fi & Network configuration");
+    GtkGesture *click_net = gtk_gesture_click_new();
+    g_signal_connect_swapped(click_net, "released", G_CALLBACK(on_launch_wifi), NULL);
+    gtk_widget_add_controller(lbl_net, GTK_EVENT_CONTROLLER(click_net));
     gtk_box_append(GTK_BOX(bar_box), lbl_net);
 
     /* Clock */
@@ -674,6 +727,26 @@ static void on_app_activate(GtkApplication *app, gpointer user_data) {
     create_taskbar_window(app);
     create_launcher_window(app);
 
+    /* Register SIGUSR1 for instantaneous keyboard shortcut toggling (Super key) */
+    g_unix_signal_add(SIGUSR1, (GSourceFunc)({
+        gboolean cb(gpointer data) {
+            (void)data;
+            toggle_launcher();
+            return G_SOURCE_CONTINUE;
+        }
+        cb;
+    }), NULL);
+
+    /* Write runtime PID file for single-instance inter-process signals */
+    const char *runtime_dir = g_get_user_runtime_dir();
+    char pid_path[256];
+    snprintf(pid_path, sizeof(pid_path), "%s/auralis-shell.pid", runtime_dir ? runtime_dir : "/tmp");
+    FILE *pfp = fopen(pid_path, "w");
+    if (pfp) {
+        fprintf(pfp, "%d\n", getpid());
+        fclose(pfp);
+    }
+
     /* Initial status update and register polling timers */
     update_system_tray(NULL);
     update_clock(NULL);
@@ -683,9 +756,26 @@ static void on_app_activate(GtkApplication *app, gpointer user_data) {
 }
 
 int main(int argc, char *argv[]) {
-    /* Handle standalone toggle flag if called from Wayfire shortcut */
+    /* Handle standalone toggle flag if called from Wayfire shortcut (Super key) */
     if (argc > 1 && strcmp(argv[1], "--toggle-launcher") == 0) {
-        /* When invoked with --toggle-launcher, pass signal or handled via DBus/App */
+        const char *runtime_dir = g_get_user_runtime_dir();
+        char pid_path[256];
+        snprintf(pid_path, sizeof(pid_path), "%s/auralis-shell.pid", runtime_dir ? runtime_dir : "/tmp");
+        FILE *pfp = fopen(pid_path, "r");
+        if (pfp) {
+            pid_t target_pid = 0;
+            if (fscanf(pfp, "%d", &target_pid) == 1 && target_pid > 0) {
+                fclose(pfp);
+                if (kill(target_pid, SIGUSR1) == 0) {
+                    return 0;
+                }
+            } else {
+                fclose(pfp);
+            }
+        }
+        /* Fallback: signal all running shell processes */
+        system("killall -USR1 auralis-shell 2>/dev/null");
+        return 0;
     }
 
     GtkApplication *app = gtk_application_new("org.auralis.shell", G_APPLICATION_DEFAULT_FLAGS);

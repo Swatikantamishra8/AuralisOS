@@ -8,7 +8,8 @@
 set -e
 
 FLAVOR="${1:-metal}"
-HOST_WORKSPACE="/mnt/host/c/Apps/BinduOS"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+HOST_WORKSPACE="${HOST_WORKSPACE:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
 BUILDER_ROOT="/mnt/alpine_builder"
 BUILDER_IMG="${HOST_WORKSPACE}/.build.img"
 

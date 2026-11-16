@@ -150,6 +150,8 @@ flowchart LR
 
 ### Prioritized Task Matrix
 
+> **Note**: For the comprehensive end-user usability and UX upgrade issue tracker, refer to [`ISSUES.md`](ISSUES.md).
+
 | Priority | Task Description | Impact | Target Component |
 | :---: | :--- | :--- | :--- |
 | **P0** | **Host Subsystem SquashFS Bundles on Cloud/CDN** | Enables real-world 1-click download in `auralis-hydrate` for Wine, Waydroid, Distrobox, and Darling. | S3 / Cloudflare R2 / GitHub Releases |

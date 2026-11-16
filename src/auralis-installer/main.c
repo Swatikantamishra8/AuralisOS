@@ -101,7 +101,17 @@ static void populate_targets(InstallerApp *app) {
             }
         }
 
-        snprintf(desc, sizeof(desc), "%s [%s]%s", line, fstype, size_buf);
+        int is_ntfs = (strcasecmp(fstype, "ntfs") == 0 || strcasecmp(fstype, "ntfs3") == 0);
+        if (strcmp(app->selected_mode, "loopback") == 0) {
+            if (is_ntfs) {
+                snprintf(desc, sizeof(desc), "⭐ Windows C: [%s]%s -> %s", fstype, size_buf, line);
+            } else {
+                snprintf(desc, sizeof(desc), "%s [%s]%s", line, fstype, size_buf);
+            }
+        } else {
+            snprintf(desc, sizeof(desc), "%s [%s]%s", line, fstype, size_buf);
+        }
+
         gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(app->combo_targets), line, desc);
         count++;
     }
@@ -142,14 +152,7 @@ static gboolean on_backend_output(GIOChannel *source, GIOCondition condition, gp
     return FALSE;
 }
 
-static void on_install_now_clicked(GtkWidget *btn, gpointer data) {
-    (void)btn;
-    InstallerApp *app = (InstallerApp *)data;
-
-    const char *target = gtk_combo_box_get_active_id(GTK_COMBO_BOX(app->combo_targets));
-    if (!target || strlen(target) == 0) target = "/dev/sda";
-    snprintf(app->selected_target, sizeof(app->selected_target), "%s", target);
-
+static void do_start_installation(InstallerApp *app) {
     const char *user = gtk_editable_get_text(GTK_EDITABLE(app->entry_user));
     const char *pass = gtk_editable_get_text(GTK_EDITABLE(app->entry_pass));
     const char *host = gtk_editable_get_text(GTK_EDITABLE(app->entry_host));
@@ -186,6 +189,62 @@ static void on_install_now_clicked(GtkWidget *btn, gpointer data) {
     } else {
         gtk_label_set_text(GTK_LABEL(app->lbl_status), "Error: Failed to launch installer backend.");
     }
+}
+
+static void on_confirm_dialog_response(GtkDialog *dialog, int response_id, gpointer user_data) {
+    InstallerApp *app = (InstallerApp *)user_data;
+    gtk_window_destroy(GTK_WINDOW(dialog));
+    if (response_id == GTK_RESPONSE_ACCEPT) {
+        do_start_installation(app);
+    }
+}
+
+static void on_install_now_clicked(GtkWidget *btn, gpointer data) {
+    (void)btn;
+    InstallerApp *app = (InstallerApp *)data;
+
+    const char *target = gtk_combo_box_get_active_id(GTK_COMBO_BOX(app->combo_targets));
+    if (!target || strlen(target) == 0) target = "/dev/sda";
+    snprintf(app->selected_target, sizeof(app->selected_target), "%s", target);
+
+    if (strcmp(app->selected_mode, "native") == 0) {
+        /* Ask for confirmation before wiping disk in native mode */
+        GtkWidget *dialog = gtk_dialog_new_with_buttons(
+            "Confirm Disk Installation",
+            GTK_WINDOW(app->window),
+            GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
+            "Cancel", GTK_RESPONSE_CANCEL,
+            "Wipe & Install", GTK_RESPONSE_ACCEPT,
+            NULL);
+
+        GtkWidget *content_area = gtk_dialog_get_content_area(GTK_DIALOG(dialog));
+        GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 12);
+        gtk_widget_set_margin_start(box, 20);
+        gtk_widget_set_margin_end(box, 20);
+        gtk_widget_set_margin_top(box, 20);
+        gtk_widget_set_margin_bottom(box, 20);
+
+        char warn_msg[512];
+        snprintf(warn_msg, sizeof(warn_msg),
+                 "⚠️ WARNING: You are about to install AuralisOS natively onto:\n\n    %s\n\nAll existing partitions and data on this drive may be PERMANENTLY ERASED.\nAre you sure you want to proceed?",
+                 app->selected_target);
+
+        GtkWidget *lbl_warn = gtk_label_new(warn_msg);
+        gtk_label_set_wrap(GTK_LABEL(lbl_warn), TRUE);
+        gtk_box_append(GTK_BOX(box), lbl_warn);
+        gtk_box_append(GTK_BOX(content_area), box);
+
+        g_signal_connect(dialog, "response", G_CALLBACK(on_confirm_dialog_response), app);
+        gtk_widget_set_visible(dialog, TRUE);
+    } else {
+        do_start_installation(app);
+    }
+}
+
+static void on_show_password_toggled(GtkCheckButton *btn, gpointer user_data) {
+    InstallerApp *app = (InstallerApp *)user_data;
+    gboolean active = gtk_check_button_get_active(btn);
+    gtk_entry_set_visibility(GTK_ENTRY(app->entry_pass), active);
 }
 
 static void on_continue_clicked(GtkWidget *btn, gpointer data) {
@@ -363,6 +422,9 @@ static void activate(GtkApplication *gtk_app, gpointer user_data) {
     gtk_entry_set_visibility(GTK_ENTRY(app->entry_pass), FALSE);
     gtk_editable_set_text(GTK_EDITABLE(app->entry_pass), "auralis");
 
+    GtkWidget *chk_show_pass = gtk_check_button_new_with_label("Show Password");
+    g_signal_connect(chk_show_pass, "toggled", G_CALLBACK(on_show_password_toggled), app);
+
     GtkWidget *lbl_h = gtk_label_new("Hostname:");
     gtk_widget_set_halign(lbl_h, GTK_ALIGN_END);
     app->entry_host = gtk_entry_new();
@@ -372,8 +434,9 @@ static void activate(GtkApplication *gtk_app, gpointer user_data) {
     gtk_grid_attach(GTK_GRID(grid), app->entry_user, 1, 0, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), lbl_p, 0, 1, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), app->entry_pass, 1, 1, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), lbl_h, 0, 2, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), app->entry_host, 1, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), chk_show_pass, 1, 2, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), lbl_h, 0, 3, 1, 1);
+    gtk_grid_attach(GTK_GRID(grid), app->entry_host, 1, 3, 1, 1);
     gtk_box_append(GTK_BOX(box_target), grid);
 
     /* Buttons */
@@ -467,6 +530,11 @@ static void activate(GtkApplication *gtk_app, gpointer user_data) {
 }
 
 int main(int argc, char *argv[]) {
+    /* If already installed and invoked without explicit arguments, do not autostart */
+    if (access("/etc/auralis/installed", F_OK) == 0 && argc < 2) {
+        return 0;
+    }
+
     GtkApplication *app = gtk_application_new("org.auralis.installer", G_APPLICATION_DEFAULT_FLAGS);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     int status = g_application_run(G_APPLICATION(app), argc, argv);

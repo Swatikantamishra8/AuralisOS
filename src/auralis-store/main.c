@@ -240,10 +240,23 @@ static void load_catalog_apps(void) {
 /* ------------------------------------------------------------------------------
  * Curated App Installation & Download Handler
  * ------------------------------------------------------------------------------ */
+static gboolean on_app_install_finished(gpointer data) {
+    GtkButton *btn = GTK_BUTTON(data);
+    gtk_button_set_label(btn, "Installed ✓");
+    gtk_widget_set_sensitive(GTK_WIDGET(btn), TRUE);
+    return G_SOURCE_REMOVE;
+}
+
 static void on_app_install_clicked(GtkButton *btn, gpointer user_data) {
-    (void)btn;
     CatalogApp *app = (CatalogApp *)user_data;
     if (!app) return;
+
+    /* Instant visual feedback */
+    gtk_widget_set_sensitive(GTK_WIDGET(btn), FALSE);
+    gtk_button_set_label(btn, "Installing...");
+
+    /* Reset button after launch */
+    g_timeout_add_seconds(6, on_app_install_finished, btn);
 
     /* Ensure required subsystem engine is mounted */
     if (!check_subsystem_mounted(app->engine)) {
@@ -340,6 +353,42 @@ static GtkWidget *create_subsystems_tab(void) {
 /* ------------------------------------------------------------------------------
  * UI Construction: Tab 2 (Curated Apps Catalog)
  * ------------------------------------------------------------------------------ */
+/* Real-time search filter for catalog apps */
+static gboolean catalog_filter_func(GtkFlowBoxChild *child, gpointer user_data) {
+    const char *search_text = gtk_editable_get_text(GTK_EDITABLE(user_data));
+    if (!search_text || strlen(search_text) == 0) return TRUE;
+
+    GtkWidget *card = gtk_flow_box_child_get_child(child);
+    if (!card) return TRUE;
+
+    CatalogApp *app = (CatalogApp *)g_object_get_data(G_OBJECT(card), "catalog-app");
+    if (!app) return TRUE;
+
+    char *term = g_utf8_casefold(search_text, -1);
+    char *name_fold = g_utf8_casefold(app->name, -1);
+    char *cat_fold = g_utf8_casefold(app->category, -1);
+    char *plat_fold = g_utf8_casefold(app->platform, -1);
+    char *desc_fold = g_utf8_casefold(app->description, -1);
+
+    gboolean match = (strstr(name_fold, term) != NULL) ||
+                     (strstr(cat_fold, term) != NULL) ||
+                     (strstr(plat_fold, term) != NULL) ||
+                     (strstr(desc_fold, term) != NULL);
+
+    g_free(term);
+    g_free(name_fold);
+    g_free(cat_fold);
+    g_free(plat_fold);
+    g_free(desc_fold);
+    return match;
+}
+
+static void on_store_search_changed(GtkSearchEntry *entry, gpointer user_data) {
+    (void)entry;
+    GtkFlowBox *flowbox = GTK_FLOW_BOX(user_data);
+    gtk_flow_box_invalidate_filter(flowbox);
+}
+
 static GtkWidget *create_curated_apps_tab(void) {
     GtkWidget *main_vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
     gtk_widget_set_margin_start(main_vbox, 16);
@@ -361,12 +410,17 @@ static GtkWidget *create_curated_apps_tab(void) {
     gtk_flow_box_set_max_children_per_line(GTK_FLOW_BOX(flowbox), 2);
     gtk_flow_box_set_selection_mode(GTK_FLOW_BOX(flowbox), GTK_SELECTION_NONE);
 
+    /* Connect search filter callback */
+    gtk_flow_box_set_filter_func(GTK_FLOW_BOX(flowbox), catalog_filter_func, app_search_entry, NULL);
+    g_signal_connect(app_search_entry, "search-changed", G_CALLBACK(on_store_search_changed), flowbox);
+
     for (GList *l = catalog_apps; l != NULL; l = l->next) {
         CatalogApp *app = (CatalogApp *)l->data;
 
         GtkWidget *card = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 12);
         gtk_widget_add_css_class(card, "app-card");
         gtk_widget_set_size_request(card, 320, 90);
+        g_object_set_data(G_OBJECT(card), "catalog-app", app);
 
         GtkWidget *icon = gtk_image_new_from_icon_name(app->icon);
         gtk_image_set_pixel_size(GTK_IMAGE(icon), 38);
