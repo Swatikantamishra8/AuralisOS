@@ -95,6 +95,13 @@ if [ -z "$MKIMAGE_BIN" ]; then
     MKIMAGE_BIN="/opt/aports/scripts/mkimage.sh"
     chmod +x "$MKIMAGE_BIN"
 fi
+
+# Patch mkimage.sh to remove deprecated --no-chown flag for compatibility with apk-tools v3+ as root
+sed -i 's/--no-chown//g' "$MKIMAGE_BIN" 2>/dev/null || true
+if [ -f "/opt/aports/scripts/mkimage.sh" ]; then
+    sed -i 's/--no-chown//g' /opt/aports/scripts/mkimage.sh 2>/dev/null || true
+fi
+
 echo -e "${GREEN}[+] Using mkimage engine: ${MKIMAGE_BIN}${RESET}"
 
 # ------------------------------------------------------------------------------
