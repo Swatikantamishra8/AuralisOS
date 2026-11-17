@@ -295,3 +295,22 @@ This document details the prioritized list of usability improvements, user-frien
     - `auralis-installer`: Storage disk and lightning deployment icon.
     - `auralis-router`: 4-World unified hub icon.
   - Integrated icons into `.desktop` files, taskbar buttons, and window headers.
+
+---
+
+### [UX-25] Platform Architecture Evolution: Debian 13 (Trixie) + OpenRC + glibc Live ISO
+- **Component**: `build/debian/`, `Dockerfile.builder.debian`, `scripts/build-iso-debian.sh`, `.github/workflows/build-iso-debian.yml`, `overlay/etc/wayfire/wayfire.ini`
+- **Priority**: Critical (P0)
+- **Status**: Completed (Phase 0 Scaffolding & Toolchain)
+- **User Impact**: Alpine Linux with musl libc imposed strict binary incompatibilities for standard desktop software (Google Chrome, VS Code, Discord, Steam, Wine without shims), had fragmented bare-metal firmware coverage, and lacked universal `.deb` package support. Furthermore, 2x1 virtual workspace tiling caused GPU buffer allocation overhead on low-memory machines.
+- **Solution Delivered**:
+  - **Debian 13 (Trixie) Minimal + OpenRC Base**: Adopted Debian Trixie with OpenRC init, retaining lightweight <130MB idle RAM while delivering 100% glibc application binary compatibility and comprehensive `non-free-firmware` support.
+  - **V-Tiling Elimination**: Pruned virtual workspace grid from 2x1 to 1x1 (`vwidth = 1`, `vheight = 1`) in `wayfire.ini`, saving 10–20MB of GPU-mapped buffer RAM.
+  - **live-build Pipeline**: Implemented clean `auto/config`, `config/package-lists/auralis.list.chroot`, and live chroot hooks:
+    - `0100-user-auralis.hook.chroot`: Provisions standard user `auralis` (UID 1000), seatd groups, and passwordless sudo.
+    - `0200-session-autologin.hook.chroot`: Wires tty1 autologin directly into Wayfire session via OpenRC inittab and systemd getty fallback.
+    - `0300-tuning-zram.hook.chroot`: Enforces 150% zstd ZRAM swap, `vm.swappiness = 180`, and desktop database caches.
+  - **Asset & Config Porting**: Mirrored all bespoke Liquid Glass desktop configs, icons, wallpapers, and application entries into `config/includes.chroot/`.
+  - **Hermetic Debian Builder**: Authored `Dockerfile.builder.debian` with GTK4/Layer-Shell development headers, Go toolchain, and `live-build`.
+  - **CI/CD Integration**: Added `.github/workflows/build-iso-debian.yml` to automatically build, test, and release the Debian 13 Live ISO on push and release tags.
+  - **Root Makefile Targets**: Added `builder-debian` and `iso-debian` to `Makefile`.

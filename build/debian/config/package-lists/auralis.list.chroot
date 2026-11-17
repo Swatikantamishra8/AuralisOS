@@ -1,0 +1,79 @@
+# ==============================================================================
+# AuralisOS Package List for Debian Trixie (live-build)
+# Target: Minimal Memory Desktop (<130MB Idle RAM)
+# Compositor: Wayfire + seatd (OpenRC init)
+# Shell: Auralis Liquid Glass Suite (C / GTK4)
+# ==============================================================================
+
+# Core Kernel & Live Boot
+linux-image-amd64
+live-boot
+initramfs-tools
+
+# Init System & Hardware Layer
+openrc
+udev
+kmod
+dbus
+seatd
+libseat1
+sudo
+polkitd
+
+# Bare-Metal Non-Free Firmware (Wi-Fi, GPU, Bluetooth, Audio)
+firmware-linux-free
+firmware-linux-nonfree
+firmware-misc-nonfree
+firmware-iwlwifi
+firmware-realtek
+firmware-atheros
+firmware-sof-signed
+pciutils
+usbutils
+
+# Wayland Compositor & Mesa Graphics Stack
+wayfire
+wf-config
+mesa-vulkan-drivers
+mesa-va-drivers
+libgl1-mesa-dri
+libegl-mesa0
+libgles2-mesa
+
+# GTK4 & Layer Shell Runtimes (for Auralis Desktop Apps)
+libgtk-4-1
+libgtk4-layer-shell0
+libadwaita-1-0
+
+# Desktop Essentials (Wayland native)
+foot
+swaybg
+thunar
+mousepad
+network-manager
+
+# Audio Subsystem (PipeWire / WirePlumber)
+pipewire
+pipewire-pulse
+wireplumber
+alsa-utils
+
+# Memory Tuning & Storage Utilities
+zram-tools
+procps
+psmisc
+squashfs-tools
+ntfs-3g
+dosfstools
+e2fsprogs
+curl
+wget
+tar
+xz-utils
+zstd
+
+# Fonts & Icon Infrastructure
+fonts-noto-core
+fonts-noto-color-emoji
+hicolor-icon-theme
+adwaita-icon-theme

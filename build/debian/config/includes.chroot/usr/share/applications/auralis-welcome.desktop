@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Auralis Apprenticeship
+GenericName=Interactive Onboarding Tour
+Comment=Guided tour of AuralisOS features, shortcuts, multi-world runtimes, and installation
+Exec=/usr/local/bin/auralis-welcome
+Icon=auralis-welcome
+Terminal=false
+Categories=System;Documentation;Help;
+StartupNotify=true

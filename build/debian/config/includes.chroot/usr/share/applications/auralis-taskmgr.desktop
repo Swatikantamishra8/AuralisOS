@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Auralis Task Manager
+GenericName=Resource Monitor
+Comment=Real-time RAM and CPU resource monitor (<95MB Idle)
+Exec=/usr/local/bin/auralis-taskmgr
+Icon=auralis-taskmgr
+Terminal=false
+Categories=System;Monitor;
+StartupNotify=true

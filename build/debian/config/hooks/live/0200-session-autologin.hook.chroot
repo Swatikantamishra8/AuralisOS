@@ -1,0 +1,90 @@
+#!/bin/sh
+set -e
+
+# ==============================================================================
+# AuralisOS Chroot Hook: 0200-session-autologin.hook.chroot
+# Sets up automatic login on tty1 into Wayfire compositor for user 'auralis'
+# Supports OpenRC (/etc/inittab) and systemd getty fallback
+# ==============================================================================
+
+echo "[AURALIS-HOOK] Configuring automatic desktop session launch on tty1..."
+
+# Create auralis-autologin handler script
+cat > /usr/local/bin/auralis-autologin << 'EOF'
+#!/bin/sh
+# Automatic desktop session launcher for unprivileged user 'auralis' on tty1
+# Wayfire and wlroots strictly refuse to run as root (UID 0)
+
+# Prepare runtime directory for UID 1000
+mkdir -p /run/user/1000
+chown -R 1000:1000 /run/user/1000 2>/dev/null || true
+chmod 0700 /run/user/1000
+chmod 1777 /run/user 2>/dev/null || true
+
+# Ensure home directory ownership
+chown -R 1000:1000 /home/auralis 2>/dev/null || true
+
+# Ensure seatd is running and socket permissions are correct
+if ! pgrep seatd >/dev/null 2>&1; then
+    if [ -x /etc/init.d/seatd ]; then
+        /etc/init.d/seatd start 2>/dev/null || true
+    fi
+    if ! pgrep seatd >/dev/null 2>&1 && [ -x /usr/bin/seatd ]; then
+        /usr/bin/seatd -g seat -l error -u root &
+        sleep 0.5
+    fi
+fi
+if [ -e /run/seatd.sock ]; then
+    chgrp seat /run/seatd.sock 2>/dev/null || true
+    chmod 0660 /run/seatd.sock 2>/dev/null || true
+fi
+
+# Ensure DRI card / render permissions
+if [ -d /dev/dri ]; then
+    chmod 0666 /dev/dri/* 2>/dev/null || true
+fi
+
+export USER=auralis
+export LOGNAME=auralis
+export HOME=/home/auralis
+export SHELL=/bin/bash
+export XDG_RUNTIME_DIR=/run/user/1000
+export SEATD_SOCK=/run/seatd.sock
+export LIBSEAT_BACKEND=seatd
+
+cd /home/auralis
+if command -v su >/dev/null 2>&1; then
+    exec su - auralis -s /bin/bash -c "/usr/local/bin/auralis-session"
+else
+    exec /usr/local/bin/auralis-session
+fi
+EOF
+chmod +x /usr/local/bin/auralis-autologin
+
+# OpenRC inittab autologin configuration
+if [ -f /etc/inittab ]; then
+    sed -i 's|^1:.*respawn:.*getty.*|1:2345:respawn:/sbin/getty -n -l /usr/local/bin/auralis-autologin 38400 tty1 linux|' /etc/inittab 2>/dev/null || true
+    sed -i 's|^tty1:.*respawn:.*getty.*|tty1::respawn:/sbin/getty -n -l /usr/local/bin/auralis-autologin 38400 tty1 linux|' /etc/inittab 2>/dev/null || true
+fi
+
+# Systemd getty autologin override (in case systemd is booted)
+mkdir -p /etc/systemd/system/getty@tty1.service.d
+cat > /etc/systemd/system/getty@tty1.service.d/override.conf << 'EOF'
+[Service]
+ExecStart=
+ExecStart=-/sbin/agetty -n -l /usr/local/bin/auralis-autologin --noclear %I $TERM
+Type=idle
+EOF
+
+# Ensure Wayfire configuration exists for auralis user
+if [ -f /etc/wayfire/wayfire.ini ]; then
+    mkdir -p /home/auralis/.config/wayfire
+    cp -f /etc/wayfire/wayfire.ini /home/auralis/.config/wayfire/wayfire.ini
+    cp -f /etc/wayfire/wayfire.ini /home/auralis/.config/wayfire.ini
+    chown -R 1000:1000 /home/auralis/.config
+fi
+
+# Make all local binaries executable
+chmod +x /usr/local/bin/auralis-* 2>/dev/null || true
+
+echo "[AURALIS-HOOK] Autologin and Wayfire wiring completed."

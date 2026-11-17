@@ -1,0 +1,61 @@
+#!/bin/sh
+set -e
+
+# ==============================================================================
+# AuralisOS Chroot Hook: 0100-user-auralis.hook.chroot
+# Provisions unprivileged desktop user 'auralis' (UID 1000)
+# Configures seatd, input, video, audio permissions and passwordless sudo
+# ==============================================================================
+
+echo "[AURALIS-HOOK] Provisioning unprivileged desktop user 'auralis' (UID 1000)..."
+
+# Ensure essential device groups exist
+for grp in seat video render audio input plugdev netdev users disk sudo; do
+    if ! getent group "$grp" >/dev/null 2>&1; then
+        groupadd -r "$grp" 2>/dev/null || groupadd "$grp" 2>/dev/null || true
+    fi
+done
+
+# Create user auralis if not present
+if ! id -u auralis >/dev/null 2>&1; then
+    useradd -m -u 1000 -s /bin/bash \
+        -c "AuralisOS Desktop User" \
+        -g users \
+        -G seat,video,render,audio,input,plugdev,netdev,sudo,disk \
+        auralis
+else
+    usermod -a -G seat,video,render,audio,input,plugdev,netdev,sudo,disk auralis 2>/dev/null || true
+fi
+
+# Enable passwordless login for live session
+passwd -d auralis 2>/dev/null || true
+passwd -d root 2>/dev/null || true
+
+# Passwordless sudo for auralis
+mkdir -p /etc/sudoers.d
+cat > /etc/sudoers.d/auralis << 'EOF'
+auralis ALL=(ALL) NOPASSWD: ALL
+%sudo ALL=(ALL) NOPASSWD: ALL
+EOF
+chmod 0440 /etc/sudoers.d/auralis
+
+# Configure user home directory permissions
+mkdir -p /home/auralis/.config/wayfire
+chown -R 1000:1000 /home/auralis
+
+# Configure seatd daemon
+mkdir -p /etc/seatd
+cat > /etc/default/seatd << 'EOF'
+SEATD_OPTS="-g seat -l error -u root"
+EOF
+
+# Ensure udev rules for seat and DRM permissions
+mkdir -p /etc/udev/rules.d
+cat > /etc/udev/rules.d/50-auralis-seat.rules << 'EOF'
+KERNEL=="card[0-9]*", SUBSYSTEM=="drm", MODE="0666", GROUP="video"
+KERNEL=="renderD[0-9]*", SUBSYSTEM=="drm", MODE="0666", GROUP="render"
+SUBSYSTEM=="input", MODE="0660", GROUP="input"
+KERNEL=="kvm", MODE="0666", GROUP="kvm"
+EOF
+
+echo "[AURALIS-HOOK] User 'auralis' and device permissions provisioned successfully."

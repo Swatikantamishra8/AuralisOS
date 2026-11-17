@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="routeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9d4edd"/>
+      <stop offset="100%" stop-color="#e0aaff"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#171226"/>
+  <rect width="124" height="124" x="2" y="2" rx="26" fill="none" stroke="#9d4edd" stroke-width="1.5" stroke-opacity="0.4"/>
+  <!-- 4 Connected Nodes (Windows, Android, Linux, macOS) -->
+  <line x1="38" y1="38" x2="90" y2="90" stroke="#9d4edd" stroke-width="3" stroke-dasharray="4,4"/>
+  <line x1="90" y1="38" x2="38" y2="90" stroke="#9d4edd" stroke-width="3" stroke-dasharray="4,4"/>
+  <circle cx="38" cy="38" r="14" fill="#0078d4"/>
+  <circle cx="90" cy="38" r="14" fill="#3ddc84"/>
+  <circle cx="38" cy="90" r="14" fill="#e95420"/>
+  <circle cx="90" cy="90" r="14" fill="#999999"/>
+  <circle cx="64" cy="64" r="16" fill="url(#routeGrad)"/>
+  <circle cx="64" cy="64" r="6" fill="#ffffff"/>
+</svg>

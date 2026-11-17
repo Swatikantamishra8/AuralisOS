@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs>
+    <linearGradient id="taskGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f72585"/>
+      <stop offset="100%" stop-color="#7209b7"/>
+    </linearGradient>
+  </defs>
+  <rect width="128" height="128" rx="28" fill="#1b1124"/>
+  <rect width="124" height="124" x="2" y="2" rx="26" fill="none" stroke="#f72585" stroke-width="1.5" stroke-opacity="0.4"/>
+  <!-- Heartbeat ECG line -->
+  <path d="M 22 64 L 42 64 L 50 40 L 62 88 L 74 50 L 84 74 L 92 64 L 106 64" fill="none" stroke="url(#taskGrad)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="62" cy="88" r="4" fill="#ffffff"/>
+  <circle cx="50" cy="40" r="4" fill="#ffffff"/>
+</svg>

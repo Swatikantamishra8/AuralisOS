@@ -1,0 +1,28 @@
+#!/bin/sh
+set -e
+
+# ==============================================================================
+# AuralisOS Debian Live-Build Configuration: auto/config
+# Target: Debian 13 Trixie + OpenRC + seatd + Wayfire (<130MB Idle RAM)
+# Features: glibc native, non-free-firmware, hybrid BIOS/UEFI boot
+# ==============================================================================
+
+lb config noauto \
+    --mode debian \
+    --distribution trixie \
+    --architectures amd64 \
+    --linux-flavours amd64 \
+    --archive-areas "main contrib non-free non-free-firmware" \
+    --apt-indices none \
+    --apt-recommends false \
+    --security true \
+    --updates true \
+    --bootloader syslinux,grub-efi \
+    --binary-images iso-hybrid \
+    --iso-application "AuralisOS" \
+    --iso-preparer "AuralisOS Team <https://github.com/Swatikantamishra8/AuralisOS>" \
+    --iso-publisher "AuralisOS Liquid Glass Project" \
+    --iso-volume "AURALIS_LIVE" \
+    --memtest none \
+    --win32-loader false \
+    "${@}"

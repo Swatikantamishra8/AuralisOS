@@ -13,13 +13,15 @@ SHELL := /bin/bash
 .ONESHELL:
 .SHELLFLAGS := -eu -o pipefail -c
 
-IMAGE_NAME ?= auralis-builder:latest
-DOCKER     ?= docker
+IMAGE_NAME   ?= auralis-builder:latest
+IMAGE_DEBIAN ?= auralis-builder-debian:latest
+DOCKER       ?= docker
 
-ROOT_DIR   := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-DIST_DIR   := $(ROOT_DIR)dist
-ISO_VM     := $(DIST_DIR)/auralis-os-vm-x86_64.iso
-ISO_METAL  := $(DIST_DIR)/auralis-os-metal-x86_64.iso
+ROOT_DIR     := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+DIST_DIR     := $(ROOT_DIR)dist
+ISO_VM       := $(DIST_DIR)/auralis-os-vm-x86_64.iso
+ISO_METAL    := $(DIST_DIR)/auralis-os-metal-x86_64.iso
+ISO_DEBIAN   := $(DIST_DIR)/auralis-os-debian-x86_64.iso
 
 # Docker execution helper
 # --privileged is required for fakeroot, mknod, and loop/squashfs manipulations
@@ -27,7 +29,7 @@ DOCKER_CMD := $(DOCKER) run --rm --privileged \
 	-v "$(ROOT_DIR):/workspace" \
 	-w /workspace
 
-.PHONY: all help builder desktop-bins router-bin installer-bin iso-vm iso-metal test-vm test-metal clean shell
+.PHONY: all help builder builder-debian desktop-bins router-bin installer-bin iso-vm iso-metal iso-debian test-vm test-metal clean shell
 
 all: help
 
@@ -48,6 +50,8 @@ help:
 	@echo "   make installer-bin Compile Windows Loopback Installer (.exe)"
 	@echo "   make iso-vm        Build slim ISO for VirtualBox/QEMU (<95MB RAM)"
 	@echo "   make iso-metal     Build bare-metal ISO (Full Firmware + SOF Audio)"
+	@echo "   make iso-debian    Build Debian 13 (Trixie) glibc Live ISO (<130MB RAM)"
+	@echo "   make builder-debian Build the hermetic Debian live-build container"
 	@echo ""
 	@echo " Verification & Testing:"
 	@echo "   make test-vm       Launch the slim VM ISO in QEMU with 256MB RAM"
@@ -65,6 +69,11 @@ builder:
 	@echo "[*] Building AuralisOS hermetic builder container image: $(IMAGE_NAME)..."
 	$(DOCKER) build -t $(IMAGE_NAME) -f Dockerfile.builder .
 	@echo "[+] Builder container image ready: $(IMAGE_NAME)"
+
+builder-debian:
+	@echo "[*] Building AuralisOS Debian hermetic builder container image: $(IMAGE_DEBIAN)..."
+	$(DOCKER) build -t $(IMAGE_DEBIAN) -f Dockerfile.builder.debian .
+	@echo "[+] Debian builder container image ready: $(IMAGE_DEBIAN)"
 
 # ------------------------------------------------------------------------------
 # 2. Compile Phase 3 Binary Router (Go Static)
@@ -134,6 +143,21 @@ iso-metal: desktop-bins
 		$(DOCKER_CMD) -e AURALIS_FLAVOR=metal $(IMAGE_NAME) /bin/bash scripts/build-iso.sh metal /workspace/dist; \
 	fi
 	@echo "[+] Bare-Metal ISO built successfully at: $(ISO_METAL)"
+
+# ------------------------------------------------------------------------------
+# 6b. Debian 13 (Trixie) glibc + OpenRC Live ISO Target
+# ------------------------------------------------------------------------------
+iso-debian:
+	@echo "[*] Triggering AuralisOS Debian 13 (Trixie) glibc ISO build..."
+	@mkdir -p "$(DIST_DIR)"
+	@if [ -f "/.dockerenv" ] && [ -f "/etc/debian_version" ]; then \
+		echo "[*] Executing directly inside Debian environment..."; \
+		/bin/bash scripts/build-iso-debian.sh "$(DIST_DIR)"; \
+	else \
+		echo "[*] Executing via Debian Docker builder container..."; \
+		$(DOCKER) run --rm --privileged -v "$(ROOT_DIR):/workspace" -w /workspace $(IMAGE_DEBIAN) /bin/bash scripts/build-iso-debian.sh /workspace/dist; \
+	fi
+	@echo "[+] Debian Trixie Live ISO built successfully at: $(ISO_DEBIAN)"
 
 # ------------------------------------------------------------------------------
 # 7. QEMU / VirtualBox Verification Targets (256 MB RAM)

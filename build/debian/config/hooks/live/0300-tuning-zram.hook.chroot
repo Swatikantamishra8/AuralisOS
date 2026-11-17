@@ -1,0 +1,64 @@
+#!/bin/sh
+set -e
+
+# ==============================================================================
+# AuralisOS Chroot Hook: 0300-tuning-zram.hook.chroot
+# Memory optimization: ZRAM 150% zstd swap, kernel sysctl tuning
+# Service runlevel configuration for OpenRC
+# ==============================================================================
+
+echo "[AURALIS-HOOK] Configuring memory tuning and OpenRC runlevels..."
+
+# 1. Kernel Sysctl Memory Tuning
+mkdir -p /etc/sysctl.d
+cat > /etc/sysctl.d/99-auralis-memory.conf << 'EOF'
+# AuralisOS Ultra-Low-Memory Kernel Tuning
+# Aggressively swap anonymous memory to zram while preserving filesystem cache
+vm.swappiness = 180
+
+# Keep directory/inode page cache active
+vm.vfs_cache_pressure = 50
+
+# Flusher thread tuning to prevent memory pressure stalls
+vm.dirty_ratio = 10
+vm.dirty_background_ratio = 5
+
+# Memory compaction threshold
+vm.extfrag_threshold = 500
+
+# Network socket memory minimization
+net.core.rmem_default = 65536
+net.core.wmem_default = 65536
+net.core.rmem_max = 1048576
+net.core.wmem_max = 1048576
+EOF
+
+# 2. ZRAM Swap Configuration
+if [ -f /etc/default/zramswap ]; then
+    sed -i 's/^#*PERCENT=.*/PERCENT=150/' /etc/default/zramswap 2>/dev/null || true
+    sed -i 's/^#*ALGO=.*/ALGO=zstd/' /etc/default/zramswap 2>/dev/null || true
+else
+    cat > /etc/default/zramswap << 'EOF'
+PERCENT=150
+ALGO=zstd
+PRIORITY=100
+EOF
+fi
+
+# 3. OpenRC Service Runlevel Wiring (if openrc is installed)
+if command -v rc-update >/dev/null 2>&1; then
+    rc-update add udev sysinit 2>/dev/null || true
+    rc-update add dbus boot 2>/dev/null || true
+    rc-update add seatd boot 2>/dev/null || true
+    rc-update add zramswap boot 2>/dev/null || true
+fi
+
+# 4. Update desktop and icon databases
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database /usr/share/applications 2>/dev/null || true
+fi
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+    gtk-update-icon-cache -f -t /usr/share/icons/hicolor 2>/dev/null || true
+fi
+
+echo "[AURALIS-HOOK] Memory tuning and service runlevels configured."

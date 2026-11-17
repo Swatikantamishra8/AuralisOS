@@ -1,0 +1,144 @@
+{
+  "version": "1.0",
+  "updated": "2026-11-06",
+  "subsystems": [
+    {
+      "id": "wine",
+      "name": "Windows Engine (Wine-Wayland)",
+      "version": "9.18",
+      "size_mb": 180,
+      "icon": "application-x-msdownload",
+      "description": "Native Wayland Wine/Proton runtime. Runs Windows .exe & .msi binaries with zero Xwayland overhead."
+    },
+    {
+      "id": "waydroid",
+      "name": "Android Engine (Waydroid)",
+      "version": "1.4.3",
+      "size_mb": 850,
+      "icon": "application-vnd.android.package-archive",
+      "description": "LXC container running LineageOS Android 13. Runs .apk applications in native Wayfire floating multi-window mode."
+    },
+    {
+      "id": "distrobox",
+      "name": "Linux Containers (Distrobox)",
+      "version": "1.7.2",
+      "size_mb": 210,
+      "icon": "application-vnd.debian.binary-package",
+      "description": "Rootless Podman containers for Debian (.deb) & Fedora (.rpm) package execution with Start Menu export."
+    },
+    {
+      "id": "darling",
+      "name": "macOS Engine (Darling)",
+      "version": "0.2.1",
+      "size_mb": 320,
+      "icon": "application-x-apple-diskimage",
+      "description": "Darwin/macOS translation layer for running Apple Mach-O command line utilities and .app application bundles."
+    }
+  ],
+  "apps": [
+    {
+      "id": "7zip",
+      "name": "7-Zip Archiver",
+      "version": "24.08",
+      "category": "Utilities",
+      "platform": "windows",
+      "engine": "wine",
+      "icon": "package-x-generic",
+      "filename": "7z2408-x64.exe",
+      "size_mb": 1.6,
+      "description": "High-compression multi-format file archiver (7z, zip, tar, wim).",
+      "download_url": "https://www.7-zip.org/a/7z2408-x64.exe"
+    },
+    {
+      "id": "notepadpp",
+      "name": "Notepad++",
+      "version": "8.6.9",
+      "category": "Development",
+      "platform": "windows",
+      "engine": "wine",
+      "icon": "accessories-text-editor",
+      "filename": "npp.8.6.9.Installer.x64.exe",
+      "size_mb": 4.5,
+      "description": "Feature-rich source code and text editor with syntax highlighting and plugin support.",
+      "download_url": "https://github.com/notepad-plus-plus/notepad-plus-plus/releases/download/v8.6.9/npp.8.6.9.Installer.x64.exe"
+    },
+    {
+      "id": "vlc",
+      "name": "VLC Media Player",
+      "version": "3.0.21",
+      "category": "Multimedia",
+      "platform": "windows",
+      "engine": "wine",
+      "icon": "multimedia-player",
+      "filename": "vlc-3.0.21-win64.exe",
+      "size_mb": 42.0,
+      "description": "Universal open-source multimedia player playing nearly all video and audio codecs.",
+      "download_url": "https://get.videolan.org/vlc/3.0.21/win64/vlc-3.0.21-win64.exe"
+    },
+    {
+      "id": "organicmaps",
+      "name": "Organic Maps",
+      "version": "2024.10.15",
+      "category": "Navigation",
+      "platform": "android",
+      "engine": "waydroid",
+      "icon": "applications-internet",
+      "filename": "OrganicMaps-2024.10.apk",
+      "size_mb": 68.0,
+      "description": "Fast, detailed, completely offline privacy-first navigation maps powered by OpenStreetMap.",
+      "download_url": "https://github.com/organicmaps/organicmaps/releases/download/2024.10.15/OrganicMaps-2024.10.15-android.apk"
+    },
+    {
+      "id": "obsidian",
+      "name": "Obsidian Notes",
+      "version": "1.7.4",
+      "category": "Productivity",
+      "platform": "linux",
+      "engine": "distrobox",
+      "icon": "text-x-generic",
+      "filename": "obsidian_1.7.4_amd64.deb",
+      "size_mb": 88.0,
+      "description": "Powerful knowledge base that works on top of a local folder of plain text Markdown files.",
+      "download_url": "https://github.com/obsidianmd/obsidian-releases/releases/download/v1.7.4/obsidian_1.7.4_amd64.deb"
+    },
+    {
+      "id": "platypus",
+      "name": "Platypus Mac",
+      "version": "5.4.1",
+      "category": "Developer Tools",
+      "platform": "macos",
+      "engine": "darling",
+      "icon": "system-run",
+      "filename": "platypus5.4.1.dmg",
+      "size_mb": 6.8,
+      "description": "Developer utility that creates native macOS applications from shell, Python, and Perl scripts.",
+      "download_url": "https://sveinbjorn.org/files/software/platypus/platypus5.4.1.dmg"
+    },
+    {
+      "id": "foobar2000",
+      "name": "Foobar2000",
+      "version": "2.1.5",
+      "category": "Multimedia",
+      "platform": "windows",
+      "engine": "wine",
+      "icon": "audio-x-generic",
+      "filename": "foobar2000_v2.1.5_x64.exe",
+      "size_mb": 6.2,
+      "description": "Advanced ultra-lightweight freeware audio player for Windows.",
+      "download_url": "https://www.foobar2000.org/files/foobar2000_v2.1.5_x64.exe"
+    },
+    {
+      "id": "fdroid",
+      "name": "F-Droid Client",
+      "version": "1.20.0",
+      "category": "Utilities",
+      "platform": "android",
+      "engine": "waydroid",
+      "icon": "system-software-install",
+      "filename": "F-Droid.apk",
+      "size_mb": 11.2,
+      "description": "Installable catalogue of FOSS (Free and Open Source Software) applications for Android.",
+      "download_url": "https://f-droid.org/F-Droid.apk"
+    }
+  ]
+}
