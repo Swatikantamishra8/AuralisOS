@@ -6,7 +6,6 @@
  */
 
 #include <gtk/gtk.h>
-#include <stdio exciting>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

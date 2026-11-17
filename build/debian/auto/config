@@ -15,8 +15,8 @@ lb config noauto \
     --archive-areas "main contrib non-free non-free-firmware" \
     --apt-indices none \
     --apt-recommends false \
-    --security true \
-    --updates true \
+    --security false \
+    --updates false \
     --bootloader syslinux,grub-efi \
     --binary-images iso-hybrid \
     --iso-application "AuralisOS" \
