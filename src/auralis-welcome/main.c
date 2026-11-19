@@ -61,7 +61,7 @@ static void on_next_clicked(GtkWidget *btn, gpointer data) {
         update_navigation_state(app);
     } else {
         /* Finished */
-        GtkWidget *win = gtk_widget_get_root(btn);
+        GtkWidget *win = GTK_WIDGET(gtk_widget_get_root(btn));
         if (GTK_IS_WINDOW(win)) {
             gtk_window_destroy(GTK_WINDOW(win));
         }

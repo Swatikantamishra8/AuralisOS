@@ -276,15 +276,16 @@ static gboolean update_system_tray(gpointer user_data) {
             snprintf(ram_buf, sizeof(ram_buf), "RAM: %ld MB (%d%%)", used_mb, pct);
             gtk_label_set_text(GTK_LABEL(lbl_ram), ram_buf);
 
-            /* Dynamic Alert Styling */
-            GtkStyleContext *ctx = gtk_widget_get_style_context(lbl_ram);
-            gtk_style_context_remove_class(ctx, "ram-warning");
-            gtk_style_context_remove_class(ctx, "ram-critical");
-
+            /* Dynamic Alert Styling — GTK4.14+ uses gtk_widget_add_css_class */
             if (pct >= 90) {
-                gtk_style_context_add_class(ctx, "ram-critical");
+                gtk_widget_remove_css_class(lbl_ram, "ram-warning");
+                gtk_widget_add_css_class(lbl_ram, "ram-critical");
             } else if (pct >= 75) {
-                gtk_style_context_add_class(ctx, "ram-warning");
+                gtk_widget_remove_css_class(lbl_ram, "ram-critical");
+                gtk_widget_add_css_class(lbl_ram, "ram-warning");
+            } else {
+                gtk_widget_remove_css_class(lbl_ram, "ram-warning");
+                gtk_widget_remove_css_class(lbl_ram, "ram-critical");
             }
         }
     }
@@ -721,7 +722,7 @@ static void on_app_activate(GtkApplication *app, gpointer user_data) {
     }
 
     if (!css_loaded) {
-        gtk_css_provider_load_from_data(provider, FALLBACK_CSS, -1);
+        gtk_css_provider_load_from_string(provider, FALLBACK_CSS);
     }
 
     gtk_style_context_add_provider_for_display(

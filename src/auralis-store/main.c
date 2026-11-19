@@ -109,30 +109,28 @@ static void update_subsystem_card_status(SubsystemInfo *sub) {
     int mounted = check_subsystem_mounted(sub->id);
     int cached = check_subsystem_cached(sub->id);
 
-    GtkStyleContext *b_ctx = gtk_widget_get_style_context(sub->lbl_badge);
-    GtkStyleContext *btn_ctx = gtk_widget_get_style_context(sub->btn_toggle);
-
-    gtk_style_context_remove_class(b_ctx, "badge-mounted");
-    gtk_style_context_remove_class(b_ctx, "badge-cached");
-    gtk_style_context_remove_class(b_ctx, "badge-uninstalled");
-    gtk_style_context_remove_class(btn_ctx, "btn-enable");
-    gtk_style_context_remove_class(btn_ctx, "btn-disable");
+    /* GTK4.14+ — use gtk_widget_add/remove_css_class instead of GtkStyleContext */
+    gtk_widget_remove_css_class(sub->lbl_badge, "badge-mounted");
+    gtk_widget_remove_css_class(sub->lbl_badge, "badge-cached");
+    gtk_widget_remove_css_class(sub->lbl_badge, "badge-uninstalled");
+    gtk_widget_remove_css_class(sub->btn_toggle, "btn-enable");
+    gtk_widget_remove_css_class(sub->btn_toggle, "btn-disable");
 
     if (mounted) {
         gtk_label_set_text(GTK_LABEL(sub->lbl_badge), "● Active & Mounted");
-        gtk_style_context_add_class(b_ctx, "badge-mounted");
+        gtk_widget_add_css_class(sub->lbl_badge, "badge-mounted");
         gtk_button_set_label(GTK_BUTTON(sub->btn_toggle), "Disable");
-        gtk_style_context_add_class(btn_ctx, "btn-disable");
+        gtk_widget_add_css_class(sub->btn_toggle, "btn-disable");
     } else if (cached) {
         gtk_label_set_text(GTK_LABEL(sub->lbl_badge), "◐ Cached on Disk");
-        gtk_style_context_add_class(b_ctx, "badge-cached");
+        gtk_widget_add_css_class(sub->lbl_badge, "badge-cached");
         gtk_button_set_label(GTK_BUTTON(sub->btn_toggle), "Mount & Enable");
-        gtk_style_context_add_class(btn_ctx, "btn-enable");
+        gtk_widget_add_css_class(sub->btn_toggle, "btn-enable");
     } else {
         gtk_label_set_text(GTK_LABEL(sub->lbl_badge), "○ Not Downloaded");
-        gtk_style_context_add_class(b_ctx, "badge-uninstalled");
+        gtk_widget_add_css_class(sub->lbl_badge, "badge-uninstalled");
         gtk_button_set_label(GTK_BUTTON(sub->btn_toggle), "Download & Enable");
-        gtk_style_context_add_class(btn_ctx, "btn-enable");
+        gtk_widget_add_css_class(sub->btn_toggle, "btn-enable");
     }
 }
 

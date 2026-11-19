@@ -42,7 +42,7 @@ typedef struct {
 
 static ProcTick *prev_proc_ticks = NULL;
 static size_t prev_proc_ticks_count = 0;
-static size_t prev_proc_ticks_cap = 0;
+__attribute__((unused)) static size_t prev_proc_ticks_cap = 0;
 
 static unsigned long long prev_cpu_total = 0;
 static unsigned long long prev_cpu_active = 0;
