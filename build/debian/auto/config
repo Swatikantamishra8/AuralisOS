@@ -13,7 +13,7 @@ lb config noauto \
     --architectures amd64 \
     --linux-flavours amd64 \
     --archive-areas "main contrib non-free non-free-firmware" \
-    --apt-indices none \
+    --apt-indices false \
     --apt-recommends false \
     --security false \
     --updates false \
