@@ -11,7 +11,8 @@ live-boot
 initramfs-tools
 
 # Init System & Hardware Layer
-openrc
+systemd
+systemd-sysv
 udev
 kmod
 dbus

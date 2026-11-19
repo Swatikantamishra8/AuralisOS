@@ -45,12 +45,17 @@ PRIORITY=100
 EOF
 fi
 
-# 3. OpenRC Service Runlevel Wiring (if openrc is installed)
+# 3. Service Runlevel Wiring (OpenRC and Systemd)
 if command -v rc-update >/dev/null 2>&1; then
     rc-update add udev sysinit 2>/dev/null || true
     rc-update add dbus boot 2>/dev/null || true
     rc-update add seatd boot 2>/dev/null || true
     rc-update add zramswap boot 2>/dev/null || true
+fi
+
+if command -v systemctl >/dev/null 2>&1; then
+    systemctl enable seatd 2>/dev/null || true
+    systemctl enable zramswap 2>/dev/null || true
 fi
 
 # 4. Update desktop and icon databases
