@@ -33,12 +33,11 @@ usbutils
 
 # Wayland Compositor & Mesa Graphics Stack
 wayfire
-wf-config
 mesa-vulkan-drivers
 mesa-va-drivers
 libgl1-mesa-dri
 libegl-mesa0
-libgles2-mesa
+libgles2
 
 # GTK4 & Layer Shell Runtimes (for Auralis Desktop Apps)
 libgtk-4-1
