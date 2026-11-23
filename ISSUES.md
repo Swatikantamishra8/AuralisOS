@@ -1,7 +1,7 @@
 # AuralisOS: User Experience (UX) & Usability Issue List
 
 > **Repository**: [https://github.com/Swatikantamishra8/AuralisOS](https://github.com/Swatikantamishra8/AuralisOS)  
-> **Status**: Tracked and Prioritized for Production Usability  
+> **Status**: 23 Resolved / 5 Active Backlog (Tracked on [GitHub Issues](https://github.com/Swatikantamishra8/AuralisOS/issues))  
 > **Target Audience**: End-Users, Desktop Operators, Developers, and Maintainers  
 
 This document details the prioritized list of usability improvements, user-friendliness gaps, papercuts, and user-centric features identified across the AuralisOS desktop shell, store, task manager, installer, router, and documentation.
@@ -28,14 +28,18 @@ This document details the prioritized list of usability improvements, user-frien
 | **UX-14** | `installer/windows` | Clean Up Legacy Development Paths & Corrupt Dummy EFI Fallback | **P0** | ✅ Implemented |
 | **UX-15** | Global Scripts | Standardize Repository URLs & Attribution Across Overlays | **P1** | ✅ Implemented |
 | **UX-16** | Desktop Shell | First-Boot "Auralis Apprenticeship" Interactive Onboarding Tour | **P1** | ✅ Implemented |
-| **UX-17** | `auralis-shell` | Native GDBus Scanned Wi-Fi SSID Dropdown in Control Center | **P1** | 📋 Backlog |
-| **UX-18** | `auralis-store` | Real-Time Subsystem Hydration Download Progress Meter | **P1** | 📋 Backlog |
-| **UX-19** | Audio Subsystem | PipeWire + WirePlumber Dynamic Audio Device Routing Profile | **P1** | 📋 Backlog |
+| **UX-17** | `auralis-shell` | Native GDBus Scanned Wi-Fi SSID Dropdown in Control Center | **P1** | 📋 [Issue #1](https://github.com/Swatikantamishra8/AuralisOS/issues/1) |
+| **UX-18** | `auralis-store` | Real-Time Subsystem Hydration Download Progress Meter | **P1** | 📋 [Issue #2](https://github.com/Swatikantamishra8/AuralisOS/issues/2) |
+| **UX-19** | Audio Subsystem | PipeWire + WirePlumber Dynamic Audio Device Routing Profile | **P1** | ✅ Implemented |
 | **UX-20** | CI/CD | Automated GitHub Actions Multi-Flavor ISO Release Pipeline | **P0** | ✅ Implemented |
 | **UX-21** | Session / Overlay | Wayfire Boot Refusal on Bare Metal (`Unable to drop root`) | **P0** | ✅ Implemented |
 | **UX-22** | `auralis-dashboard` | Real-Time Hardware Telemetry & Subsystem Dashboard (<super> D) | **P0** | ✅ Implemented |
 | **UX-23** | Desktop / Graphics | Curated Liquid Glass Wallpaper Suite & `auralis-wallpaper` Switcher | **P1** | ✅ Implemented |
 | **UX-24** | Desktop / Theme | Bespoke Liquid Glass SVG & PNG Application Icon Suite | **P1** | ✅ Implemented |
+| **UX-25** | Core OS / Base | Platform Architecture Evolution: Debian 13 (Trixie) + glibc Live ISO | **P0** | ✅ Implemented |
+| **UX-26** | Packaging / Debian | Native `.deb` Package Build & APT Repository Pipeline | **P1** | 📋 [Issue #3](https://github.com/Swatikantamishra8/AuralisOS/issues/3) |
+| **UX-27** | Installer Backend | Dual-Boot EFI & Debian Live Target Partitioning Deployment | **P0** | 📋 [Issue #4](https://github.com/Swatikantamishra8/AuralisOS/issues/4) |
+| **UX-28** | Compositor / Display | Dynamic Display Resolution & Hypervisor Guest Additions Integration | **P1** | 📋 [Issue #5](https://github.com/Swatikantamishra8/AuralisOS/issues/5) |
 
 ---
 
@@ -217,10 +221,13 @@ This document details the prioritized list of usability improvements, user-frien
 
 ---
 
-### [UX-19] Audio Server Integration (PipeWire + WirePlumber) (Roadmap Item)
-- **Component**: Package profiles and OpenRC runlevel
+### [UX-19] Audio Server Integration (PipeWire + WirePlumber)
+- **Component**: `build/debian/config/package-lists/auralis.list.chroot`, PipeWire runtime
 - **Priority**: Medium (P1)
-- **Description**: Configure default PipeWire and WirePlumber services in the boot profile for seamless Bluetooth headphone and HDMI dynamic audio routing.
+- **Status**: Completed (Debian 13 Live ISO)
+- **Solution Delivered**:
+  - Integrated `pipewire`, `pipewire-pulse`, `wireplumber`, and `alsa-utils` alongside `firmware-sof-signed` into the Debian live package tree.
+  - Replaces legacy ALSA-only routing with a modern low-latency sound server supporting Bluetooth audio and dynamic HDMI hotplug.
 
 ---
 
@@ -310,3 +317,40 @@ This document details the prioritized list of usability improvements, user-frien
   - **GTK4 Modernization**: Updated deprecated GTK4 APIs across `auralis-welcome`, `auralis-shell`, and `auralis-store` to GTK4.14+ standards (`gtk_widget_add/remove_css_class`, `gtk_css_provider_load_from_string`, and type-safe `GTK_WIDGET()` downcasting).
   - **Full Firmware Stack**: Ships Debian non-free-firmware for broad Wi-Fi, Intel/AMD GPU, and Sound Open Firmware (SOF) audio compatibility on bare-metal hardware.
   - **Automated CI/CD**: Both `Build AuralisOS Debian ISO` and `Build AuralisOS ISO` (Alpine Metal) pipelines now run green in GitHub Actions.
+
+---
+
+### [UX-26] Native Debian `.deb` Package Build & APT Repository Pipeline
+- **Component**: `src/auralis-*/`, `build/debian/`, `.github/workflows/build-iso-debian.yml`
+- **Priority**: High (P1)
+- **Status**: Backlog (Tracked on [GitHub Issue #3](https://github.com/Swatikantamishra8/AuralisOS/issues/3))
+- **User Impact**: Applications are currently built from source and copied directly into the live filesystem. Users cannot easily update individual components using `apt upgrade` or install/remove specific Auralis desktop packages cleanly.
+- **Proposed Solution**:
+  - Add standard `debian/` packaging metadata (`control`, `rules`, `compat`, `changelog`) for all 7 native C and Go applications.
+  - Establish a debian package build pass producing standalone `.deb` installers.
+  - Publish `.deb` assets with GitHub Releases.
+
+---
+
+### [UX-27] Graphical Installer Backend: Debian Live Rootfs Deployment & EFI Registration
+- **Component**: `src/auralis-installer/main.c`, `src/auralis-installer/backend.sh`
+- **Priority**: Critical (P0)
+- **Status**: Backlog (Tracked on [GitHub Issue #4](https://github.com/Swatikantamishra8/AuralisOS/issues/4))
+- **User Impact**: The existing installer script targets Alpine diskless loopback setups. On Debian 13 Live boots, users need a native drive installation path that copies the live Debian squashfs rootfs and properly registers UEFI boot entries.
+- **Proposed Solution**:
+  - Add native Debian rootfs synchronization with `rsync` preserving attributes.
+  - Automate `grub-install --target=x86_64-efi` and `efibootmgr` boot registration.
+  - Run `os-prober` to detect and generate dual-boot chainloader entries for existing Windows and Linux installations.
+  - Generate target persistent `/etc/fstab` with partition UUIDs.
+
+---
+
+### [UX-28] Dynamic Display Resolution & Hypervisor Guest Additions Integration
+- **Component**: `overlay/etc/wayfire/wayfire.ini`, `build/debian/config/package-lists/auralis.list.chroot`
+- **Priority**: Medium (P1)
+- **Status**: Backlog (Tracked on [GitHub Issue #5](https://github.com/Swatikantamishra8/AuralisOS/issues/5))
+- **User Impact**: When running AuralisOS inside VirtualBox or QEMU/KVM virtual machines, resizing the VM window does not automatically negotiate resolution changes in Wayfire, and clipboard sharing between host and guest is not active.
+- **Proposed Solution**:
+  - Add `spice-vdagent` for QEMU and `virtualbox-guest-utils` for VirtualBox in the package tree.
+  - Configure Wayland clipboard synchronization and dynamic DRM mode change listeners.
+  - Provide a quick resolution switcher in `auralis-dashboard`.
