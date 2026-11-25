@@ -181,6 +181,7 @@ rc_add auralis-hwdetect boot
 # Default runlevel: network, userland services & Phase 3 idle memory reaper
 rc_add local default
 rc_add networking default
+rc_add iwd default
 rc_add sshd default
 rc_add auralis-reaper default
 
