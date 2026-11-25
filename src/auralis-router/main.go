@@ -176,6 +176,22 @@ func isSubsystemActive(subsystemId string) bool {
 	return false
 }
 
+// findTool returns the full path of an AuralisOS helper. The desktop tools are
+// installed in /usr/local/bin, which is not always on the PATH of the process
+// that runs the router (for example when it is started through binfmt_misc).
+func findTool(name string) string {
+	if p, err := exec.LookPath(name); err == nil {
+		return p
+	}
+	for _, dir := range []string{"/usr/local/bin", "/usr/bin"} {
+		p := filepath.Join(dir, name)
+		if fi, err := os.Stat(p); err == nil && fi.Mode().IsRegular() && fi.Mode()&0111 != 0 {
+			return p
+		}
+	}
+	return ""
+}
+
 func ensureSubsystemActive(subsystemId, subsystemName, filePath string) bool {
 	if isSubsystemActive(subsystemId) {
 		return true
@@ -186,9 +202,9 @@ func ensureSubsystemActive(subsystemId, subsystemName, filePath string) bool {
 	// 1. If running under Wayland/X11 GUI, trigger graphical prompt dialog
 	if os.Getenv("WAYLAND_DISPLAY") != "" || os.Getenv("DISPLAY") != "" {
 		// Prefer auralis-store modal prompt
-		if _, err := exec.LookPath("auralis-store"); err == nil {
+		if storePath := findTool("auralis-store"); storePath != "" {
 			fmt.Println("[AURALIS-ROUTER] Spawning on-demand activation dialog in auralis-store...")
-			cmd := exec.Command("auralis-store", "--prompt", subsystemId, filePath)
+			cmd := exec.Command(storePath, "--prompt", subsystemId, filePath)
 			_ = cmd.Run()
 			return isSubsystemActive(subsystemId)
 		} else if _, err := exec.LookPath("zenity"); err == nil {
@@ -207,12 +223,17 @@ func ensureSubsystemActive(subsystemId, subsystemName, filePath string) bool {
 	}
 
 	// 2. Terminal Interactive Prompt Fallback
-	fmt.Printf("[AURALIS-ROUTER] Would you like to download and activate %s now? [Y/n]: ", subsystemName)
+	// Never start a download without an explicit answer from a real terminal.
+	if fi, err := os.Stdin.Stat(); err != nil || fi.Mode()&os.ModeCharDevice == 0 {
+		fmt.Println("[AURALIS-ROUTER] No interactive terminal available. Not activating the subsystem.")
+		return false
+	}
+	fmt.Printf("[AURALIS-ROUTER] Would you like to download and activate %s now? [y/N]: ", subsystemName)
 	reader := bufio.NewReader(os.Stdin)
 	ans, _ := reader.ReadString('\n')
 	ans = strings.TrimSpace(strings.ToLower(ans))
 
-	if ans == "" || ans == "y" || ans == "yes" {
+	if ans == "y" || ans == "yes" {
 		fmt.Printf("[AURALIS-ROUTER] Invoking auralis-hydrate enable %s...\n", subsystemId)
 		hydCmd := exec.Command("auralis-hydrate", "enable", subsystemId)
 		hydCmd.Stdout = os.Stdout

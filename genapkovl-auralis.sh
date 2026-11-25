@@ -174,12 +174,14 @@ rc_add bootmisc boot
 rc_add syslog boot
 rc_add zram-init boot
 rc_add seatd boot
+rc_add procfs boot
 rc_add binfmt boot
 rc_add auralis-hwdetect boot
 
 # Default runlevel: network, userland services & Phase 3 idle memory reaper
 rc_add local default
 rc_add networking default
+rc_add iwd default
 rc_add sshd default
 rc_add auralis-reaper default
 
@@ -217,6 +219,7 @@ virtio_ring
 nvme
 nvme_core
 ntfs3
+binfmt_misc
 EOF
 
 # Custom udev rules to guarantee modalias triggers and DRM / seat permissions
@@ -330,8 +333,9 @@ cat > "$TMP"/etc/conf.d/zram-init <<'EOF'
 num_devices=1
 
 # Device 0: 150% of physical RAM allocated with ultra-fast zstd compression
+# zram-init expects the size in MiB, so compute 150% of MemTotal at boot.
 type0=swap
-size0=150%
+size0=$(( $(awk '/^MemTotal:/ {print $2}' /proc/meminfo) * 3 / 2 / 1024 ))
 algo0=zstd
 max_streams0=0
 
@@ -354,6 +358,9 @@ vm.dirty_background_ratio = 5
 
 # Memory compaction threshold
 vm.extfrag_threshold = 500
+
+# Do not boost watermarks after fragmentation events (documented in PROJECT_STATUS.md)
+vm.watermark_boost_factor = 0
 
 # Enable panic on out of memory if critical
 vm.panic_on_oom = 0
@@ -774,12 +781,6 @@ iface lo inet loopback
 
 auto eth0
 iface eth0 inet dhcp
-
-auto ens3
-iface ens3 inet dhcp
-
-auto enp0s3
-iface enp0s3 inet dhcp
 EOF
 
 cat > "$TMP"/etc/resolv.conf <<'EOF'
