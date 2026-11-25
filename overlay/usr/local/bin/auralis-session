@@ -71,7 +71,7 @@ if grep -qi "virtualbox\|innotek" /sys/class/dmi/id/product_name /sys/class/dmi/
     IS_VBOX=1
 elif [ -e /dev/vboxguest ] || lsmod | grep -qi "vbox"; then
     IS_VBOX=1
-elif command -v lspci >/dev/null 2>&1 && lspci -d 80ee: >/dev/null 2>&1; then
+elif command -v lspci >/dev/null 2>&1 && lspci -d 80ee: 2>/dev/null | grep -q .; then
     IS_VBOX=1
 fi
 
