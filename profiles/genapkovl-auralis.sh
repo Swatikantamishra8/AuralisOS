@@ -356,6 +356,9 @@ vm.dirty_background_ratio = 5
 # Memory compaction threshold
 vm.extfrag_threshold = 500
 
+# Do not boost watermarks after fragmentation events (documented in PROJECT_STATUS.md)
+vm.watermark_boost_factor = 0
+
 # Enable panic on out of memory if critical
 vm.panic_on_oom = 0
 
