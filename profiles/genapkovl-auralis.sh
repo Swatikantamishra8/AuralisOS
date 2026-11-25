@@ -330,8 +330,9 @@ cat > "$TMP"/etc/conf.d/zram-init <<'EOF'
 num_devices=1
 
 # Device 0: 150% of physical RAM allocated with ultra-fast zstd compression
+# zram-init expects the size in MiB, so compute 150% of MemTotal at boot.
 type0=swap
-size0=150%
+size0=$(( $(awk '/^MemTotal:/ {print $2}' /proc/meminfo) * 3 / 2 / 1024 ))
 algo0=zstd
 max_streams0=0
 
