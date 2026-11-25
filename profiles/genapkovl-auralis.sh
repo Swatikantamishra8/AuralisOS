@@ -781,12 +781,6 @@ iface lo inet loopback
 
 auto eth0
 iface eth0 inet dhcp
-
-auto ens3
-iface ens3 inet dhcp
-
-auto enp0s3
-iface enp0s3 inet dhcp
 EOF
 
 cat > "$TMP"/etc/resolv.conf <<'EOF'
