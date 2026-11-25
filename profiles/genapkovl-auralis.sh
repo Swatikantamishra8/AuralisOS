@@ -174,6 +174,7 @@ rc_add bootmisc boot
 rc_add syslog boot
 rc_add zram-init boot
 rc_add seatd boot
+rc_add procfs boot
 rc_add binfmt boot
 rc_add auralis-hwdetect boot
 
@@ -217,6 +218,7 @@ virtio_ring
 nvme
 nvme_core
 ntfs3
+binfmt_misc
 EOF
 
 # Custom udev rules to guarantee modalias triggers and DRM / seat permissions
